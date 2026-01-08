@@ -43,23 +43,21 @@ const AuthGate = ({ children }) => {
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <div className="brand-modal w-full max-w-md rounded-2xl p-6">
-          {/* Header */}
-          <div className="flex flex-col items-center gap-4">
-            {/* Logo */}
-            <img
-              src="/logo.png"
-              alt="Applicatie logo"
-              className="h-10 object-contain"
-            />
+          {/* Logo */}
+          <img
+            src="/logo.png"
+            alt="Applicatie logo"
+            className="h-10 object-contain mb-4"
+          />
 
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
-                <Lock className="w-5 h-5 text-brand-primary" />
-              </div>
-              <h2 className="text-lg font-semibold text-brand-ink">
-                Inloggen
-              </h2>
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
+              <Lock className="w-5 h-5 text-brand-primary" />
             </div>
+            <h2 className="text-lg font-semibold text-brand-ink">
+              Inloggen
+            </h2>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">

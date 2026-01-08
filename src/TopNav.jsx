@@ -1,20 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { getApiEnv, setApiEnv } from './apiEnv';
-import { clearAuthCredentials, getAuthCredentials, setAuthCredentials } from './apiAuth';
+import { clearAuthCredentials, getAuthCredentials } from './apiAuth';
+import logo from './logo.png';
 
 const navLinkClasses = ({ isActive }) =>
-  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+  `px-3 py-2 rounded-xl text-sm font-medium transition-colors border ${
     isActive
-      ? 'bg-blue-600 text-white shadow-sm'
-      : 'text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800'
+      ? 'bg-brand-primary text-white border-transparent'
+      : 'bg-white text-brand-ink border-brand-border hover:bg-brand-surfaceMuted'
   }`;
 
 const TopNav = () => {
   const navigate = useNavigate();
   const [apiEnv, setApiEnvState] = useState(getApiEnv());
-  const [authUser, setAuthUser] = useState('');
-  const [authPass, setAuthPass] = useState('');
   const [hasAuth, setHasAuth] = useState(Boolean(getAuthCredentials()));
 
   const handleEnvChange = (event) => {
@@ -31,38 +30,31 @@ const TopNav = () => {
     return () => window.removeEventListener('authChange', handleAuthChange);
   }, []);
 
-  const handleAuthSubmit = (event) => {
-    event.preventDefault();
-    if (!authUser || !authPass) return;
-    setAuthCredentials(authUser, authPass);
-    setAuthUser('');
-    setAuthPass('');
-  };
-
   const handleLogout = () => {
     clearAuthCredentials();
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+    <nav className="bg-white/80 border-b border-brand-border backdrop-blur">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <button
           onClick={() => navigate('/')}
-          className="text-blue-700 font-semibold text-lg tracking-tight dark:text-blue-300"
+          className="flex items-center gap-3 text-brand-ink font-semibold text-lg tracking-tight"
           aria-label="Ga naar Acceptatieregels"
         >
-          Acceptatiebeheer
+          <img src={logo} alt="Sleutelstad Assuradeuren" className="h-8 w-auto" />
+          <span className="hidden sm:inline">Acceptatiebeheer</span>
         </button>
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2">
-            <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor="api-env">
+            <label className="text-xs font-medium text-brand-muted" htmlFor="api-env">
               Omgeving
             </label>
             <select
               id="api-env"
               value={apiEnv}
               onChange={handleEnvChange}
-              className="px-2 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+              className="px-2 py-1.5 border border-brand-border rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
             >
               <option value="production">Productie</option>
               <option value="acceptance">Acceptatie</option>
@@ -77,7 +69,7 @@ const TopNav = () => {
           {hasAuth ? (
             <button
               onClick={handleLogout}
-              className="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="text-xs font-medium px-3 py-1.5 rounded-xl border border-brand-border text-brand-muted hover:bg-brand-surfaceMuted transition-colors"
             >
               Uitloggen
             </button>

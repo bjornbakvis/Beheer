@@ -2,32 +2,11 @@ import os
 import base64
 
 
-def _unauthorized_response():
-    """
-    Belangrijk:
-    - GEEN 'WWW-Authenticate' header!
-    - Anders krijg je die browser/Google popup.
-    """
-    return {
-        "statusCode": 401,
-        "headers": {
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store",
-        },
-        "body": '{"error":"unauthorized"}',
-    }
-
-
 def is_authorized(headers):
-    """
-    Verwacht Basic Auth header:
-      Authorization: Basic base64(user:pass)
-
-    Als BASIC_AUTH_USER/PASS niet gezet zijn -> allow (handig voor dev).
-    """
     user = os.getenv("BASIC_AUTH_USER")
     password = os.getenv("BASIC_AUTH_PASS")
 
+    # Als er geen env vars gezet zijn, laten we alles door (handig voor lokale dev).
     if not user or not password:
         return True
 
@@ -51,12 +30,14 @@ def is_authorized(headers):
     return u == user and p == password
 
 
-def require_auth(headers):
+def send_unauthorized(handler):
     """
-    Helper voor endpoints:
-    - return None als authorized
-    - return een 401 response dict als niet authorized (zonder WWW-Authenticate)
+    Belangrijk:
+    - GEEN 'WWW-Authenticate' header zetten.
+    - Die header triggert de browser/Google login popup.
     """
-    if is_authorized(headers):
-        return None
-    return _unauthorized_response()
+    handler.send_response(401)
+    handler.send_header("Content-Type", "application/json; charset=utf-8")
+    handler.send_header("Cache-Control", "no-store")
+    handler.end_headers()
+    handler.wfile.write(b'{"error":"unauthorized"}')

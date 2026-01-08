@@ -127,8 +127,6 @@ def fetch_products(config, token):
             params={
                 # Note: keep these as strings; upstream expects booleans/flags
                 "AlleenLopendProduct": "true",
-                "IsBeschikbaarVoorAgent": "true",
-                "IsBeschikbaarVoorKlant": "true",
                 "IsBeschikbaarVoorMedewerker": "true",
             },
             headers=_dias_headers(config, token),

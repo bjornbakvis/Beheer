@@ -126,7 +126,7 @@ def fetch_products(config, token):
             f"{config['host'].rstrip('/')}/contract/api/v1/contracten/verzekeringen/productdefinities",
             params={
                 # Note: keep these as strings; upstream expects booleans/flags
-                "AlleenLopendProduct": "false",
+                "AlleenLopendProduct": "true",
                 "IsBeschikbaarVoorAgent": "true",
                 "IsBeschikbaarVoorKlant": "true",
                 "IsBeschikbaarVoorMedewerker": "true",

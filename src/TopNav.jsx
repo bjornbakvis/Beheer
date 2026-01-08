@@ -5,15 +5,16 @@ import { clearAuthCredentials, getAuthCredentials } from './apiAuth';
 
 // Eén consistente knop-stijl voor alles in de nav (tabs, omgeving, uitloggen)
 const baseBtn =
-  'px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-rose-200';
+  'px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200';
 
 const tabClasses = ({ isActive }) =>
   [
     baseBtn,
     isActive
-      // Duidelijke “selected” state: altijd zichtbaar
-      ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-      : 'bg-white/70 text-gray-800 border-gray-200 hover:bg-white',
+      // EXACT dezelfde primaire stijl als "Nieuwe regel"
+      ? 'brand-primary text-white border-transparent shadow-sm'
+      // Inactief: rode outline, ook huisstijl
+      : 'brand-outline hover:bg-red-50',
   ].join(' ');
 
 const TopNav = () => {

@@ -95,7 +95,7 @@ def fetch_products(token, host):
                 "Tenant-CustomerId": "207572",
                 "BedrijfId": "1",
                 "MedewerkerId": "1",
-                "KantoorId": "1",
+                "KantoorId": "2",
             },
             timeout=30.0,
         )
@@ -121,7 +121,7 @@ def fetch_product_detail(token, host, product_id):
                 "Tenant-CustomerId": "207572",
                 "BedrijfId": "1",
                 "MedewerkerId": "1",
-                "KantoorId": "1",
+                "KantoorId": "2",
             },
             timeout=30.0,
         )

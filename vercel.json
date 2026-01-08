@@ -1,6 +1,14 @@
 {
   "version": 2,
   "functions": {
+    "api/products.py": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "api/acceptance-rules.py": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
     "api/explain-rule.py": {
       "maxDuration": 30,
       "memory": 1024

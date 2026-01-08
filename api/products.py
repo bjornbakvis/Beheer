@@ -92,7 +92,7 @@ def fetch_products(token, host):
             headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/json",
-                "Tenant-CustomerId": "30439",
+                "Tenant-CustomerId": "207572",
                 "BedrijfId": "1",
                 "MedewerkerId": "1",
                 "KantoorId": "1",
@@ -118,7 +118,7 @@ def fetch_product_detail(token, host, product_id):
             headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/json",
-                "Tenant-CustomerId": "30439",
+                "Tenant-CustomerId": "207572",
                 "BedrijfId": "1",
                 "MedewerkerId": "1",
                 "KantoorId": "1",

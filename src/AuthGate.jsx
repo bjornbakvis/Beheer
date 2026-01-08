@@ -17,7 +17,10 @@ const AuthGate = ({ children }) => {
     return () => window.removeEventListener('authChange', onAuthChange);
   }, []);
 
-  const canSubmit = useMemo(() => user.trim().length > 0 && pass.length > 0, [user, pass]);
+  const canSubmit = useMemo(
+    () => user.trim().length > 0 && pass.length > 0,
+    [user, pass]
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -48,17 +51,17 @@ const AuthGate = ({ children }) => {
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <div className="brand-modal w-full max-w-md rounded-2xl p-6">
           <div className="flex items-start justify-between gap-3">
+            {/* Header */}
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
                 <Lock className="w-5 h-5 text-brand-primary" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-brand-ink">Inloggen</h2>
-                <p className="text-sm text-brand-muted">
-                  Voer de credentials in om de DIAS endpoints te gebruiken.
-                </p>
-              </div>
+              <h2 className="text-lg font-semibold text-brand-ink">
+                Inloggen
+              </h2>
             </div>
+
+            {/* Reset button */}
             <button
               type="button"
               onClick={handleClear}
@@ -72,7 +75,9 @@ const AuthGate = ({ children }) => {
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-brand-muted">Gebruikersnaam</label>
+              <label className="block text-xs font-medium text-brand-muted">
+                Gebruikersnaam
+              </label>
               <input
                 autoFocus
                 value={user}
@@ -81,8 +86,11 @@ const AuthGate = ({ children }) => {
                 placeholder="Vul uw gebruikersnaam in"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-medium text-brand-muted">Wachtwoord</label>
+              <label className="block text-xs font-medium text-brand-muted">
+                Wachtwoord
+              </label>
               <input
                 type="password"
                 value={pass}

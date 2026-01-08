@@ -3,7 +3,7 @@ import { RefreshCw, ChevronLeft, ChevronRight, AlertCircle, X, Pencil, Info } fr
 import { useNavigate, useLocation } from 'react-router-dom';
 import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
-import { getAuthHeader } from './apiAuth';
+import { authFetch } from './apiAuth';
 
 const App = () => {
   const [rules, setRules] = useState([]);
@@ -93,9 +93,7 @@ const App = () => {
     setError(null);
 
     try {
-      const response = await fetch(withApiEnv('/api/acceptance-rules'), {
-        headers: { ...getAuthHeader() },
-      });
+      const response = await authFetch(withApiEnv('/api/acceptance-rules'));
 
       if (!response.ok) {
         throw new Error('Failed to fetch acceptance rules');
@@ -178,11 +176,11 @@ const App = () => {
     setDeletingId(regelId);
     setError(null);
     try {
-      const response = await fetch(
+      const response = await authFetch(
         withApiEnv(`/api/acceptance-rules?regelId=${encodeURIComponent(regelId)}`),
         {
           method: 'DELETE',
-          headers: { 'Cache-Control': 'no-store', ...getAuthHeader() },
+          headers: { 'Cache-Control': 'no-store' },
         }
       );
       if (!response.ok) {
@@ -406,12 +404,11 @@ const App = () => {
         Expressie: editExpressie.trim(),
         ResourceId: resourceId,
       };
-      const response = await fetch(withApiEnv('/api/acceptance-rules'), {
+      const response = await authFetch(withApiEnv('/api/acceptance-rules'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store',
-          ...getAuthHeader(),
         },
         body: JSON.stringify(payload),
       });
@@ -472,12 +469,11 @@ const App = () => {
         Expressie: expressie,
         ResourceId: resourceId,
       };
-      const response = await fetch(withApiEnv('/api/acceptance-rules'), {
+      const response = await authFetch(withApiEnv('/api/acceptance-rules'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store',
-          ...getAuthHeader(),
         },
         body: JSON.stringify(payload),
       });
@@ -505,10 +501,10 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen brand-page">
       <TopNav />
       <div className="max-w-6xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-card">
+        <div className="rounded-2xl border border-brand-border brand-card">
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
@@ -537,7 +533,7 @@ const App = () => {
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg transition-colors neon-primary"
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-xl transition-colors brand-primary"
                 >
                   + Nieuwe regel
                 </button>
@@ -618,7 +614,7 @@ const App = () => {
                                 state: { listState: { searchTerm, currentPage } },
                               })
                             }
-                            className="px-3 py-2 border border-blue-100 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm transition-all duration-150 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-900/30 neon-outline"
+                            className="px-3 py-2 border rounded-xl transition-all duration-150 brand-outline"
                             title="Toon details"
                           >
                             Details
@@ -710,7 +706,7 @@ const App = () => {
       </div>
       {showDeleteSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">
+          <div className="w-full max-w-sm rounded-2xl border border-brand-border brand-modal">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Melding</p>
               <button
@@ -737,7 +733,7 @@ const App = () => {
       )}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">
+          <div className="w-full max-w-lg rounded-2xl border border-brand-border brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Nieuwe acceptatieregel</p>
               <button
@@ -1020,7 +1016,7 @@ const App = () => {
       )}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">
+          <div className="w-full max-w-lg rounded-2xl border border-brand-border brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
                 Bewerk acceptatieregel {editRuleId}

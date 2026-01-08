@@ -7,15 +7,11 @@ import { clearAuthCredentials, getAuthCredentials } from './apiAuth';
 const baseBtn =
   'px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200';
 
+const inactiveBtn = 'brand-outline hover:bg-red-50';
+const activeBtn = 'brand-primary text-white border-transparent shadow-sm';
+
 const tabClasses = ({ isActive }) =>
-  [
-    baseBtn,
-    isActive
-      // EXACT dezelfde primaire stijl als "Nieuwe regel"
-      ? 'brand-primary text-white border-transparent shadow-sm'
-      // Inactief: rode outline, ook huisstijl
-      : 'brand-outline hover:bg-red-50',
-  ].join(' ');
+  [baseBtn, isActive ? activeBtn : inactiveBtn].join(' ');
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -62,10 +58,7 @@ const TopNav = () => {
               id="api-env"
               value={apiEnv}
               onChange={handleEnvChange}
-              className={[
-                baseBtn,
-                'bg-white/70 text-gray-800 border-gray-200 hover:bg-white',
-              ].join(' ')}
+              className={[baseBtn, inactiveBtn].join(' ')}
             >
               <option value="production">Productie</option>
               <option value="acceptance">Acceptatie</option>
@@ -80,15 +73,9 @@ const TopNav = () => {
             Producten
           </NavLink>
 
-          {/* Uitloggen (zelfde hoogte/lettertype als tabs) */}
+          {/* Uitloggen (EXACT gelijk aan inactieve tabs) */}
           {hasAuth ? (
-            <button
-              onClick={handleLogout}
-              className={[
-                baseBtn,
-                'bg-white/70 text-gray-800 border-gray-200 hover:bg-white',
-                ].join(' ')}
-            >
+            <button onClick={handleLogout} className={[baseBtn, inactiveBtn].join(' ')}>
               Uitloggen
             </button>
           ) : null}

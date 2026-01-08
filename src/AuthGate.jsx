@@ -43,14 +43,16 @@ const AuthGate = ({ children }) => {
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <div className="brand-modal w-full max-w-md rounded-2xl p-6">
-          {/* Logo */}
-          <img
-            src="/logo.png"
-            alt="Applicatie logo"
-            className="h-10 object-contain mb-4"
-          />
+          {/* Centered logo */}
+          <div className="flex justify-center mb-4">
+            <img
+              src="/logo.png"
+              alt="Applicatie logo"
+              className="h-10 object-contain"
+            />
+          </div>
 
-          {/* Header */}
+          {/* Header (left aligned) */}
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
               <Lock className="w-5 h-5 text-brand-primary" />
@@ -102,7 +104,7 @@ const AuthGate = ({ children }) => {
             </button>
 
             <p className="text-xs text-brand-muted">
-              Tip: deze gegevens worden alleen in je browser (sessionStorage) bewaard en verdwijnen bij het sluiten van de tab.
+              Tip: deze gegevens worden alleen in je browser bewaard en verdwijnen bij het sluiten van de tab.
             </p>
           </form>
         </div>

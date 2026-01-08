@@ -5,17 +5,20 @@ import App from './App';
 import RuleDetail from './RuleDetail';
 import Products from './Products';
 import ProductRules from './ProductRules';
+import AuthGate from './AuthGate';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/producten" element={<Products />} />
-        <Route path="/producten/:productId/regels" element={<ProductRules />} />
-        <Route path="/rules/:regelId" element={<RuleDetail />} />
-      </Routes>
+      <AuthGate>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/producten" element={<Products />} />
+          <Route path="/producten/:productId/regels" element={<ProductRules />} />
+          <Route path="/rules/:regelId" element={<RuleDetail />} />
+        </Routes>
+      </AuthGate>
     </BrowserRouter>
   </React.StrictMode>
 );

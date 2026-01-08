@@ -45,7 +45,6 @@ const TopNav = () => {
           aria-label="Ga naar Acceptatieregels"
         >
           <img src="/logo.png" alt="Sleutelstad" className="h-8 w-auto" />
-          <span className="hidden sm:inline">Acceptatiebeheer</span>
         </button>
 
         <div className="flex items-center gap-3">

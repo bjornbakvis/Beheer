@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { getApiEnv, setApiEnv } from './apiEnv';
 import { clearAuthCredentials, getAuthCredentials } from './apiAuth';
-import logo from './logo.png';
 
 const navLinkClasses = ({ isActive }) =>
   `px-3 py-2 rounded-xl text-sm font-medium transition-colors border ${
@@ -42,7 +41,7 @@ const TopNav = () => {
           className="flex items-center gap-3 text-brand-ink font-semibold text-lg tracking-tight"
           aria-label="Ga naar Acceptatieregels"
         >
-          <img src={logo} alt="Sleutelstad Assuradeuren" className="h-8 w-auto" />
+          <img  src="/logo.png"   alt="Sleutelstad"   className="h-8 w-auto" />
           <span className="hidden sm:inline">Acceptatiebeheer</span>
         </button>
         <div className="flex items-center gap-4">

@@ -19,7 +19,7 @@ token_cache = {
     "acceptance": {"token": None, "expires_at": None},
 }
 
-DEFAULT_KINETIC_HOST = os.getenv("KINETIC_HOST", "https://kinetic.private-insurance.eu")
+DEFAULT_KINETIC_HOST = os.getenv("KINETIC_HOST", "https://dcb.sleutelstadassuradeuren.nl")
 DEFAULT_CLIENT_ID = os.getenv("KINETIC_CLIENT_ID")
 DEFAULT_CLIENT_SECRET = os.getenv("KINETIC_CLIENT_SECRET")
 

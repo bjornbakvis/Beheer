@@ -18,14 +18,7 @@ token_cache = {
     "acceptance": {"token": None, "expires_at": None},
 }
 
-KINETIC_HOST = os.getenv("KINETIC_HOST")
-if not KINETIC_HOST:
-    self.send_response(500)
-    self.send_header("Content-Type", "application/json; charset=utf-8")
-    self.end_headers()
-    self.wfile.write(b'{"error":"KINETIC_HOST environment variable is not set"}')
-    return
-
+DEFAULT_KINETIC_HOST = os.getenv("KINETIC_HOST", "https://kinetic.private-insurance.eu")
 DEFAULT_CLIENT_ID = os.getenv("KINETIC_CLIENT_ID")
 DEFAULT_CLIENT_SECRET = os.getenv("KINETIC_CLIENT_SECRET")
 

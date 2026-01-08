@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Lock, X } from 'lucide-react';
-import { getAuthCredentials, setAuthCredentials, clearAuthCredentials } from './apiAuth';
+import { Lock } from 'lucide-react';
+import { getAuthCredentials, setAuthCredentials } from './apiAuth';
 
 // Simple UI gate: if no credentials are stored, hide the app and show a branded modal.
 // Note: This keeps using Basic Auth credentials stored in sessionStorage (current approach).
@@ -34,13 +34,6 @@ const AuthGate = ({ children }) => {
     setPass('');
   };
 
-  const handleClear = () => {
-    clearAuthCredentials();
-    setUser('');
-    setPass('');
-    setError(null);
-  };
-
   if (hasAuth) return children;
 
   return (
@@ -50,27 +43,14 @@ const AuthGate = ({ children }) => {
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <div className="brand-modal w-full max-w-md rounded-2xl p-6">
-          <div className="flex items-start justify-between gap-3">
-            {/* Header */}
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
-                <Lock className="w-5 h-5 text-brand-primary" />
-              </div>
-              <h2 className="text-lg font-semibold text-brand-ink">
-                Inloggen
-              </h2>
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
+              <Lock className="w-5 h-5 text-brand-primary" />
             </div>
-
-            {/* Reset button */}
-            <button
-              type="button"
-              onClick={handleClear}
-              className="p-2 rounded-lg hover:bg-brand-surfaceMuted transition"
-              title="Reset"
-              aria-label="Reset"
-            >
-              <X className="w-5 h-5 text-brand-muted" />
-            </button>
+            <h2 className="text-lg font-semibold text-brand-ink">
+              Inloggen
+            </h2>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">

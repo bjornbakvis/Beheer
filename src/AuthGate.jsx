@@ -78,7 +78,7 @@ const AuthGate = ({ children }) => {
                 value={user}
                 onChange={(e) => setUser(e.target.value)}
                 className="mt-1 w-full px-3 py-2 border border-brand-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
-                placeholder="BASIC_AUTH_USER"
+                placeholder="Vul uw gebruikersnaam in"
               />
             </div>
             <div>
@@ -88,7 +88,7 @@ const AuthGate = ({ children }) => {
                 value={pass}
                 onChange={(e) => setPass(e.target.value)}
                 className="mt-1 w-full px-3 py-2 border border-brand-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
-                placeholder="BASIC_AUTH_PASS"
+                placeholder="Vul uw wachtwoord in"
               />
             </div>
 

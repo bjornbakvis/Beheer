@@ -87,7 +87,7 @@ const TopNav = () => {
               className={[
                 baseBtn,
                 'bg-white/70 text-gray-800 border-gray-200 hover:bg-white',
-              ].join(' ')}
+                ].join(' ')}
             >
               Uitloggen
             </button>

@@ -13,15 +13,18 @@
 }
 
 body {
-  background: theme(colors.brand.surfaceMuted);
-  color: theme(colors.brand.ink);
+  /* Was: theme(colors.brand.surfaceMuted) */
+  background: theme(colors.gray.50);
+  /* Was: theme(colors.brand.ink) */
+  color: theme(colors.gray.900);
 }
 
 /* Reusable surfaces */
 .brand-card {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(231, 228, 232, 0.9);
-  box-shadow: theme(boxShadow.soft);
+  /* Was: theme(boxShadow.soft) */
+  box-shadow: 0 8px 30px rgba(20, 18, 22, 0.08);
   backdrop-filter: blur(10px);
 }
 
@@ -33,7 +36,11 @@ body {
 }
 
 .brand-primary {
-  background-image: linear-gradient(120deg, rgba(211, 80, 85, 1), rgba(156, 103, 97, 0.95));
+  background-image: linear-gradient(
+    120deg,
+    rgba(211, 80, 85, 1),
+    rgba(156, 103, 97, 0.95)
+  );
   box-shadow: 0 10px 30px rgba(211, 80, 85, 0.22);
 }
 

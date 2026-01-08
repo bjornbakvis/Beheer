@@ -152,7 +152,7 @@ def fetch_product_detail(config, token, product_id):
         response = client.get(
             f"{config['host'].rstrip('/')}/contract/api/v1/contracten/verzekeringen/productdefinities/{product_id}",
             headers=_dias_headers(config, token),
-            timeout=30.0,
+            timeout=httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0),
         )
         response.raise_for_status()
         return response.json()

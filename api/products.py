@@ -5,6 +5,7 @@ import httpx
 import json
 import os
 import sys
+import time
 
 current_dir = os.path.dirname(__file__)
 if current_dir not in sys.path:
@@ -27,13 +28,13 @@ ACCEPTANCE_KINETIC_HOST = os.getenv("KINETIC_HOST_ACCEPTANCE", DEFAULT_KINETIC_H
 ACCEPTANCE_CLIENT_ID = os.getenv("KINETIC_CLIENT_ID_ACCEPTANCE", DEFAULT_CLIENT_ID)
 ACCEPTANCE_CLIENT_SECRET = os.getenv("KINETIC_CLIENT_SECRET_ACCEPTANCE", DEFAULT_CLIENT_SECRET)
 
-# NEW: contract base path (so we can fix upstream 404s without code changes)
+# Contract base path (configurable)
 DEFAULT_CONTRACT_BASE_PATH = os.getenv("KINETIC_CONTRACT_BASE_PATH", "/contract/api/v1")
 ACCEPTANCE_CONTRACT_BASE_PATH = os.getenv(
     "KINETIC_CONTRACT_BASE_PATH_ACCEPTANCE", DEFAULT_CONTRACT_BASE_PATH
 )
 
-# DIAS header values (use same pattern as your acceptance-rules.py)
+# DIAS header values
 DEFAULT_TENANT_CUSTOMER_ID = os.getenv("DIAS_TENANT_CUSTOMER_ID", "")
 DEFAULT_BEDRIJF_ID = os.getenv("DIAS_BEDRIJF_ID", "")
 DEFAULT_MEDEWERKER_ID = os.getenv("DIAS_MEDEWERKER_ID", "")
@@ -47,6 +48,9 @@ ACCEPTANCE_MEDEWERKER_ID = os.getenv(
     "DIAS_MEDEWERKER_ID_ACCEPTANCE", DEFAULT_MEDEWERKER_ID
 )
 ACCEPTANCE_KANTOOR_ID = os.getenv("DIAS_KANTOOR_ID_ACCEPTANCE", DEFAULT_KANTOOR_ID)
+
+# Step 2: split/longer timeouts for upstream
+UPSTREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0)
 
 
 def get_env_config(env_key):
@@ -84,16 +88,26 @@ def get_bearer_token(env_key="production"):
             f"KINETIC_CLIENT_ID or KINETIC_CLIENT_SECRET is not set for {env_key}"
         )
 
+    token_url = f"{config['host'].rstrip('/')}/token"
+
+    # Step 1: timing + URL log (no secrets)
+    t0 = time.time()
+    print("TOKEN_URL=", token_url)
+    print("TOKEN_START_TS=", t0)
+
     with httpx.Client() as client:
         response = client.post(
-            f"{config['host'].rstrip('/')}/token",
+            token_url,
             params={
                 "client_id": config["client_id"],
                 "client_secret": config["client_secret"],
             },
-            timeout=30.0,
+            timeout=UPSTREAM_TIMEOUT,
         )
         response.raise_for_status()
+
+        t1 = time.time()
+        print("TOKEN_STATUS=", response.status_code, "DURATION_S=", round(t1 - t0, 3))
 
         data = response.json()
         token = data.get("access_token")
@@ -133,36 +147,45 @@ def _dias_headers(config, token):
 
 
 def _products_url(config):
-    base = str(config.get("contract_base_path") or "").strip()
+    host = (config.get("host") or "").rstrip("/")
+    base = (config.get("contract_base_path") or "").strip("/")
+    if not host:
+        raise RuntimeError("KINETIC_HOST is empty")
     if not base:
         raise RuntimeError("KINETIC_CONTRACT_BASE_PATH is empty")
-    base = base.strip("/")
-    return (
-        f"{config['host'].rstrip('/')}/{base}"
-        "/contracten/verzekeringen/productdefinities"
-    )
+    return f"{host}/{base}/contracten/verzekeringen/productdefinities"
 
 
 def fetch_products(config, token):
     url = _products_url(config)
 
-    # Debug line (safe): logs the upstream URL, not secrets
+    # Step 1: timing + URL log (no secrets)
+    t0 = time.time()
     print("PRODUCTS_UPSTREAM_URL=", url)
+    print("PRODUCTS_START_TS=", t0)
 
     with httpx.Client() as client:
         response = client.get(
             url,
             params={
-                # keep these as simple strings (no angle brackets)
-                "AlleenLopendProduct": "false",
+                "AlleenLopendProduct": "true",
                 "IsBeschikbaarVoorAgent": "true",
                 "IsBeschikbaarVoorKlant": "true",
                 "IsBeschikbaarVoorMedewerker": "true",
             },
             headers=_dias_headers(config, token),
-            timeout=30.0,
+            timeout=UPSTREAM_TIMEOUT,
         )
         response.raise_for_status()
+
+        t1 = time.time()
+        print(
+            "PRODUCTS_UPSTREAM_STATUS=",
+            response.status_code,
+            "DURATION_S=",
+            round(t1 - t0, 3),
+        )
+
         data = response.json()
 
         if isinstance(data, list):
@@ -178,16 +201,28 @@ def fetch_products(config, token):
 
 
 def fetch_product_detail(config, token, product_id):
-    url = f"{_products_url(config).rstrip('/')}/{product_id}"
+    base_url = _products_url(config).rstrip("/")
+    url = f"{base_url}/{product_id}"
+
+    t0 = time.time()
     print("PRODUCT_DETAIL_UPSTREAM_URL=", url)
+    print("PRODUCT_DETAIL_START_TS=", t0)
 
     with httpx.Client() as client:
         response = client.get(
             url,
             headers=_dias_headers(config, token),
-            timeout=30.0,
+            timeout=UPSTREAM_TIMEOUT,
         )
         response.raise_for_status()
+
+        t1 = time.time()
+        print(
+            "PRODUCT_DETAIL_UPSTREAM_STATUS=",
+            response.status_code,
+            "DURATION_S=",
+            round(t1 - t0, 3),
+        )
         return response.json()
 
 
@@ -222,7 +257,6 @@ class handler(BaseHTTPRequestHandler):
             config = get_env_config(env_key)
             token = get_bearer_token(env_key)
 
-            # Prefer /api/products?productId=<id>, but keep /api/products/<id> as fallback.
             product_id = query_params.get("productId", [None])[0]
             if (
                 not product_id

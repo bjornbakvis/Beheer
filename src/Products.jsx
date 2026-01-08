@@ -3,7 +3,7 @@ import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
-import { getAuthHeader } from './apiAuth';
+import { authFetch } from './apiAuth';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -43,9 +43,9 @@ const Products = () => {
     setError(null);
 
     try {
-      const res = await fetch(withApiEnv('/api/products'), {
+      const res = await authFetch(withApiEnv('/api/products'), {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-store', ...getAuthHeader() },
+        headers: { 'Cache-Control': 'no-store' },
       });
       if (!res.ok) {
         throw new Error(`Failed to fetch productdefinitions (status ${res.status})`);
@@ -87,15 +87,15 @@ const Products = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen brand-page">
       <TopNav />
       <div className="max-w-6xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-card">
-          <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+        <div className="rounded-2xl border border-brand-border brand-card">
+          <div className="p-6 border-b border-brand-border">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">Producten</h1>
-                <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">
+                <h1 className="text-2xl font-semibold text-brand-ink">Producten</h1>
+                <p className="text-sm text-brand-muted mt-1">
                   Overzicht van beschikbare verzekeringsproducten. Via de Bekijk knop zie je de gekoppelde Acceptatieregels.
                 </p>
               </div>
@@ -105,12 +105,12 @@ const Products = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Zoek op Product Id of Omschrijving"
-                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="w-full md:w-64 px-3 py-2 border border-brand-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
                 />
                 <button
                   onClick={fetchProducts}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors neon-primary"
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition brand-primary"
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
@@ -120,11 +120,11 @@ const Products = () => {
           </div>
 
           {error && (
-            <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3 dark:bg-yellow-900/30 dark:border-yellow-700/60">
-              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5 dark:text-yellow-400" />
+            <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-yellow-800 font-medium dark:text-yellow-200">API verbinding niet beschikbaar</p>
-                <p className="text-xs text-yellow-700 mt-1 dark:text-yellow-200/80">
+                <p className="text-sm text-yellow-800 font-medium">API verbinding niet beschikbaar</p>
+                <p className="text-xs text-yellow-700 mt-1">
                   Demo data wordt getoond. Configureer de backend API voor live data.
                 </p>
               </div>
@@ -134,24 +134,24 @@ const Products = () => {
           <div className="overflow-x-auto">
             {loading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                <thead className="bg-brand-surfaceMuted border-b border-brand-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       Product Id
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       Omschrijving
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       Acceptatie regels
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
+                <tbody className="bg-white divide-y divide-brand-border">
                   {filteredProducts.length === 0 ? (
                     <tr>
                       <td colSpan="3" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
@@ -172,7 +172,7 @@ const Products = () => {
                           <button
                             onClick={() => navigate(`/producten/${product.productId}/regels`)}
                             disabled={!product.productId}
-                            className="px-3 py-2 border border-blue-100 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-900/30 neon-outline"
+                            className="px-3 py-2 rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed border brand-outline"
                             title="Toon acceptatieregels"
                           >
                             Bekijk

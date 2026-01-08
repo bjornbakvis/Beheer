@@ -126,10 +126,10 @@ def fetch_products(config, token):
             f"{config['host'].rstrip('/')}/contract/api/v1/contracten/verzekeringen/productdefinities",
             params={
                 # Note: keep these as strings; upstream expects booleans/flags
-                "AlleenLopendProduct": "false",
-                "IsBeschikbaarVoorAgent": "true",
-                "IsBeschikbaarVoorKlant": "true",
-                "IsBeschikbaarVoorMedewerker": "true",
+                "AlleenLopendProduct": "<false>",
+                "IsBeschikbaarVoorAgent": "<true>",
+                "IsBeschikbaarVoorKlant": "<true>",
+                "IsBeschikbaarVoorMedewerker": "<true>"
             },
             headers=_dias_headers(config, token),
             timeout=30.0,

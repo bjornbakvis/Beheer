@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { RefreshCw, AlertCircle, Pencil, X } from 'lucide-react';
 import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
-import { getAuthHeader } from './apiAuth';
+import { authFetch } from './apiAuth';
 
 const ProductRules = () => {
   const { productId } = useParams();
@@ -25,9 +25,9 @@ const ProductRules = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(withApiEnv(`/api/products?productId=${encodeURIComponent(productId)}`), {
+      const res = await authFetch(withApiEnv(`/api/products?productId=${encodeURIComponent(productId)}`), {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-store', ...getAuthHeader() },
+        headers: { 'Cache-Control': 'no-store' },
       });
       if (!res.ok) {
         throw new Error(`Failed to fetch product rules (status ${res.status})`);
@@ -66,11 +66,11 @@ const ProductRules = () => {
     setDeletingId(regelId);
     setError(null);
     try {
-      const response = await fetch(
+      const response = await authFetch(
         withApiEnv(`/api/acceptance-rules?regelId=${encodeURIComponent(regelId)}`),
         {
           method: 'DELETE',
-          headers: { 'Cache-Control': 'no-store', ...getAuthHeader() },
+          headers: { 'Cache-Control': 'no-store' },
         }
       );
       if (!response.ok) {
@@ -130,12 +130,11 @@ const ProductRules = () => {
         Expressie: editExpressie.trim(),
         ResourceId: resourceId,
       };
-      const response = await fetch(withApiEnv('/api/acceptance-rules'), {
+      const response = await authFetch(withApiEnv('/api/acceptance-rules'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store',
-          ...getAuthHeader(),
         },
         body: JSON.stringify(payload),
       });
@@ -162,30 +161,30 @@ const ProductRules = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen brand-page">
       <TopNav />
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-brand-border text-brand-ink hover:bg-brand-surfaceMuted transition-colors"
           >
             ← Terug
           </button>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
+          <h1 className="text-2xl font-semibold text-brand-ink">
             Acceptatieregels voor product {productId}
           </h1>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-card">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between dark:border-slate-700">
-            <p className="text-sm text-gray-600 dark:text-slate-300">
+        <div className="rounded-2xl border border-brand-border brand-card">
+          <div className="p-6 border-b border-brand-border flex items-center justify-between">
+            <p className="text-sm text-brand-muted">
               Overzicht van validatieregels uit de productdefinitie
             </p>
             <button
               onClick={fetchRules}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors neon-primary"
+              className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition brand-primary"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -193,11 +192,11 @@ const ProductRules = () => {
           </div>
 
           {error && (
-            <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3 dark:bg-yellow-900/30 dark:border-yellow-700/60">
-              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5 dark:text-yellow-400" />
+            <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-yellow-800 font-medium dark:text-yellow-200">Kon acceptatieregels niet laden</p>
-                <p className="text-xs text-yellow-700 mt-1 dark:text-yellow-200/80">{error}</p>
+                <p className="text-sm text-yellow-800 font-medium">Kon acceptatieregels niet laden</p>
+                <p className="text-xs text-yellow-700 mt-1">{error}</p>
               </div>
             </div>
           )}
@@ -205,30 +204,30 @@ const ProductRules = () => {
           <div className="overflow-x-auto">
             {loading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+                <thead className="bg-brand-surfaceMuted border-b border-brand-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       ValidatieregelId
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       AandResultaatAcceptatie
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       Omschrijving
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       Details
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       Aanpassen
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
+                <tbody className="bg-white divide-y divide-brand-border">
                   {rules.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { RefreshCw, ChevronLeft, ChevronRight, AlertCircle, X, Pencil, Info } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TopNav from './TopNav';
@@ -11,6 +11,8 @@ const App = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortKey, setSortKey] = useState('regelId'); // regelId | externNummer | omschrijving
+  const [sortDir, setSortDir] = useState('asc'); // asc | desc
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -145,6 +147,12 @@ const App = () => {
       if (typeof listState.searchTerm === 'string') {
         setSearchTerm(listState.searchTerm);
       }
+      if (typeof listState.sortKey === 'string') {
+        setSortKey(listState.sortKey);
+      }
+      if (typeof listState.sortDir === 'string') {
+        setSortDir(listState.sortDir);
+      }
       if (Number.isFinite(listState.currentPage)) {
         setCurrentPage(listState.currentPage);
       }
@@ -152,9 +160,53 @@ const App = () => {
     }
   }, [location.state]);
 
-  const filteredRules = rules.filter((rule) =>
-    rule.regelId?.toString().toLowerCase().includes(searchTerm.trim().toLowerCase())
-  );
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const filteredRules = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+
+    const filtered = !q
+      ? rules
+      : rules.filter((rule) => {
+          const regelId = (rule.regelId ?? '').toString().toLowerCase();
+          const extern = (rule.externNummer ?? '').toString().toLowerCase();
+          const oms = (rule.omschrijving ?? '').toString().toLowerCase();
+          return regelId.includes(q) || extern.includes(q) || oms.includes(q);
+        });
+
+    const sorted = [...filtered].sort((a, b) => {
+      const av =
+        sortKey === 'regelId'
+          ? (a.regelId ?? '')
+          : sortKey === 'externNummer'
+            ? (a.externNummer ?? '')
+            : (a.omschrijving ?? '');
+
+      const bv =
+        sortKey === 'regelId'
+          ? (b.regelId ?? '')
+          : sortKey === 'externNummer'
+            ? (b.externNummer ?? '')
+            : (b.omschrijving ?? '');
+
+      const cmp = av.toString().localeCompare(bv.toString(), 'nl', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [rules, searchTerm, sortKey, sortDir]);
+
 
   const totalPages = Math.max(1, Math.ceil(filteredRules.length / rulesPerPage));
   const safePage = Math.min(currentPage, totalPages);
@@ -520,7 +572,7 @@ const App = () => {
                   type="text"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  placeholder="Zoek op Regel ID (bijv. 60_200)"
+                  placeholder="Zoek op Regel ID, Extern Nummer of Omschrijving (deelmatch)"
                   className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
                 <button
@@ -563,13 +615,34 @@ const App = () => {
                 <thead className="bg-gray-50 border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
-                      Regel ID
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('regelId')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        Regel ID {sortKey === 'regelId' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
-                      Extern Nummer
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('externNummer')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        Extern Nummer {sortKey === 'externNummer' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
-                      Omschrijving
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('omschrijving')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        Omschrijving {sortKey === 'omschrijving' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
                       Details
@@ -593,7 +666,7 @@ const App = () => {
                           <button
                             onClick={() =>
                               navigate(`/rules/${rule.regelId}`, {
-                                state: { listState: { searchTerm, currentPage } },
+                                state: { listState: { searchTerm, currentPage, sortKey, sortDir } },
                               })
                             }
                             className="hover:underline"
@@ -611,7 +684,7 @@ const App = () => {
                           <button
                             onClick={() =>
                               navigate(`/rules/${rule.regelId}`, {
-                                state: { listState: { searchTerm, currentPage } },
+                                state: { listState: { searchTerm, currentPage, sortKey, sortDir } },
                               })
                             }
                             className="px-3 py-2 border rounded-xl transition-all duration-150 brand-outline"
@@ -621,25 +694,29 @@ const App = () => {
                           </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
-                              className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                              title="Bewerk acceptatieregel"
-                              aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(rule.regelId)}
-                              disabled={deletingId === rule.regelId}
-                              className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
-                              title="Verwijder acceptatieregel"
-                              aria-label={`Verwijder acceptatieregel ${rule.regelId}`}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
+                          {rule.externNummer?.toString().toLowerCase().includes('tp') ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
+                                className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                title="Bewerk acceptatieregel"
+                                aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(rule.regelId)}
+                                disabled={deletingId === rule.regelId}
+                                className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
+                                title="Verwijder acceptatieregel"
+                                aria-label={`Verwijder acceptatieregel ${rule.regelId}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">—</span>
+                          )}
                         </td>
                       </tr>
                     ))

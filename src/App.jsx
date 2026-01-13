@@ -611,43 +611,59 @@ const App = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : (
-              <table className="w-full">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: '160px' }} />
+                  <col style={{ width: '220px' }} />
+                  <col />
+                  <col style={{ width: '120px' }} />
+                  <col style={{ width: '150px' }} />
+                </colgroup>
                 <thead className="bg-gray-50 border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('regelId')}
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        Regel ID {sortKey === 'regelId' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        Regel ID{' '}
+                        <span className="inline-block w-4 text-right">
+                          {sortKey === 'regelId' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('externNummer')}
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        Extern Nummer {sortKey === 'externNummer' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        Extern Nummer{' '}
+                        <span className="inline-block w-4 text-right">
+                          {sortKey === 'externNummer' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('omschrijving')}
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        Omschrijving {sortKey === 'omschrijving' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        Omschrijving{' '}
+                        <span className="inline-block w-4 text-right">
+                          {sortKey === 'omschrijving' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       Details
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       Aanpassen
                     </th>
                   </tr>
@@ -677,7 +693,10 @@ const App = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-200">
                           {rule.externNummer}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
+                        <td
+                          className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200 truncate"
+                          title={rule.omschrijving}
+                        >
                           {rule.omschrijving}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">

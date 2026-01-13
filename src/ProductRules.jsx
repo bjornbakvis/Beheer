@@ -1,9 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { RefreshCw, AlertCircle, Pencil, X } from 'lucide-react';
 import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { authFetch } from './apiAuth';
+
+const normalize = (v) => (v ?? '').toString();
+
+const getRegelId = (regel) => regel?.ValidatieregelId ?? regel?.validatieregelId ?? '';
+
+/**
+ * Externnummer:
+ * - Probeert Externnummer-velden (verschillende casing varianten)
+ * - Fallback naar AandResultaatAcceptatie (zoals je huidige tabel al gebruikte)
+ */
+const getExternnummer = (regel) =>
+  regel?.Externnummer ??
+  regel?.externnummer ??
+  regel?.ExternNummer ??
+  regel?.externNummer ??
+  regel?.AandResultaatAcceptatie ??
+  regel?.aandResultaatAcceptatie ??
+  '';
+
+const getOmschrijving = (regel) => regel?.Omschrijving ?? regel?.omschrijving ?? '';
+
+const canManageRule = (regel) => normalize(getExternnummer(regel)).toLowerCase().includes('tp');
 
 const ProductRules = () => {
   const { productId } = useParams();
@@ -19,6 +41,11 @@ const ProductRules = () => {
   const [editExpressie, setEditExpressie] = useState('');
   const [editError, setEditError] = useState(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // ✅ Nieuw: zoeken + sorteren
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('regelId'); // regelId | externnummer | omschrijving
+  const [sortDir, setSortDir] = useState('asc'); // asc | desc
 
   const fetchRules = async () => {
     if (!productId) return;
@@ -66,13 +93,11 @@ const ProductRules = () => {
     setDeletingId(regelId);
     setError(null);
     try {
-      const response = await authFetch(
-        withApiEnv(`/api/acceptance-rules?regelId=${encodeURIComponent(regelId)}`),
-        {
-          method: 'DELETE',
-          headers: { 'Cache-Control': 'no-store' },
-        }
-      );
+      const response = await authFetch(withApiEnv(`/api/acceptance-rules?regelId=${encodeURIComponent(regelId)}`), {
+        method: 'DELETE',
+        headers: { 'Cache-Control': 'no-store' },
+      });
+
       if (!response.ok) {
         let message = `Failed to delete rule (status ${response.status})`;
         try {
@@ -83,12 +108,8 @@ const ProductRules = () => {
         }
         throw new Error(message);
       }
-      setRules((prev) =>
-        prev.filter(
-          (regel) =>
-            (regel.ValidatieregelId || regel.validatieregelId) !== regelId
-        )
-      );
+
+      setRules((prev) => prev.filter((regel) => getRegelId(regel) !== regelId));
       setShowDeleteSuccess(true);
     } catch (err) {
       setError(err.message);
@@ -108,6 +129,7 @@ const ProductRules = () => {
   const handleEditSubmit = async (event) => {
     event.preventDefault();
     setEditError(null);
+
     if (!editRuleId) {
       setEditError('RegelId ontbreekt.');
       return;
@@ -130,6 +152,7 @@ const ProductRules = () => {
         Expressie: editExpressie.trim(),
         ResourceId: resourceId,
       };
+
       const response = await authFetch(withApiEnv('/api/acceptance-rules'), {
         method: 'PUT',
         headers: {
@@ -138,6 +161,7 @@ const ProductRules = () => {
         },
         body: JSON.stringify(payload),
       });
+
       if (!response.ok) {
         let message = `Failed to update rule (status ${response.status})`;
         try {
@@ -148,6 +172,7 @@ const ProductRules = () => {
         }
         throw new Error(message);
       }
+
       setShowEditModal(false);
       setEditRuleId(null);
       setEditOmschrijving('');
@@ -158,6 +183,74 @@ const ProductRules = () => {
     } finally {
       setEditSubmitting(false);
     }
+  };
+
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const visibleRules = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    const filtered = !q
+      ? rules
+      : rules.filter((regel) => {
+          const regelId = normalize(getRegelId(regel)).toLowerCase();
+          const extern = normalize(getExternnummer(regel)).toLowerCase();
+          const oms = normalize(getOmschrijving(regel)).toLowerCase();
+          return regelId.includes(q) || extern.includes(q) || oms.includes(q);
+        });
+
+    const sorted = [...filtered].sort((a, b) => {
+      const aId = normalize(getRegelId(a));
+      const bId = normalize(getRegelId(b));
+      const aEx = normalize(getExternnummer(a));
+      const bEx = normalize(getExternnummer(b));
+      const aOm = normalize(getOmschrijving(a));
+      const bOm = normalize(getOmschrijving(b));
+
+      let av = '';
+      let bv = '';
+      if (sortKey === 'regelId') {
+        av = aId;
+        bv = bId;
+      }
+      if (sortKey === 'externnummer') {
+        av = aEx;
+        bv = bEx;
+      }
+      if (sortKey === 'omschrijving') {
+        av = aOm;
+        bv = bOm;
+      }
+
+      const cmp = av.localeCompare(bv, 'nl', { numeric: true, sensitivity: 'base' });
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [rules, search, sortKey, sortDir]);
+
+  const SortableTh = ({ label, columnKey }) => {
+    const active = sortKey === columnKey;
+    const indicator = active ? (sortDir === 'asc' ? '▲' : '▼') : '';
+    return (
+      <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+        <button
+          type="button"
+          onClick={() => toggleSort(columnKey)}
+          className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+          title="Klik om te sorteren"
+        >
+          {label} {indicator}
+        </button>
+      </th>
+    );
   };
 
   return (
@@ -171,16 +264,24 @@ const ProductRules = () => {
           >
             ← Terug
           </button>
-          <h1 className="text-2xl font-semibold text-brand-ink">
-            Acceptatieregels voor product {productId}
-          </h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Acceptatieregels voor product {productId}</h1>
         </div>
 
         <div className="rounded-2xl border border-brand-border brand-card">
-          <div className="p-6 border-b border-brand-border flex items-center justify-between">
-            <p className="text-sm text-brand-muted">
-              Overzicht van validatieregels uit de productdefinitie
-            </p>
+          <div className="p-6 border-b border-brand-border flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm text-brand-muted">Overzicht van validatieregels uit de productdefinitie</p>
+              <div className="mt-3">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Zoek op RegelID, externnummer of omschrijving..."
+                  className="w-full md:w-[420px] px-3 py-2 rounded-xl border border-brand-border bg-white/80 text-sm text-brand-ink focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
             <button
               onClick={fetchRules}
               disabled={loading}
@@ -210,15 +311,9 @@ const ProductRules = () => {
               <table className="w-full">
                 <thead className="bg-brand-surfaceMuted border-b border-brand-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
-                      ValidatieregelId
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
-                      AandResultaatAcceptatie
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
-                      Omschrijving
-                    </th>
+                    <SortableTh label="RegelID" columnKey="regelId" />
+                    <SortableTh label="Externnummer" columnKey="externnummer" />
+                    <SortableTh label="Omschrijving" columnKey="omschrijving" />
                     <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       Details
                     </th>
@@ -227,68 +322,83 @@ const ProductRules = () => {
                     </th>
                   </tr>
                 </thead>
+
                 <tbody className="bg-white divide-y divide-brand-border">
-                  {rules.length === 0 ? (
+                  {visibleRules.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
+                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
                         Geen acceptatieregels gevonden
                       </td>
                     </tr>
                   ) : (
-                    rules.map((regel) => (
-                      <tr key={regel.ValidatieregelId || regel.validatieregelId}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
-                          {regel.ValidatieregelId ?? regel.validatieregelId ?? '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
-                          {regel.AandResultaatAcceptatie ?? regel.aandResultaatAcceptatie ?? '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
-                          {regel.Omschrijving ?? regel.omschrijving ?? '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={() =>
-                              navigate(`/rules/${regel.ValidatieregelId || regel.validatieregelId}`)
-                            }
-                            disabled={!(regel.ValidatieregelId || regel.validatieregelId)}
-                            className="px-3 py-2 border border-blue-100 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-900/30 neon-outline"
-                            title="Toon regel details"
-                          >
-                            Details
-                          </button>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center gap-2">
+                    visibleRules.map((regel) => {
+                      const regelId = getRegelId(regel);
+                      const externnummer = getExternnummer(regel);
+                      const omschrijving = getOmschrijving(regel);
+                      const canManage = canManageRule(regel);
+
+                      return (
+                        <tr key={regelId || `${externnummer}-${omschrijving}`}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
+                            {regelId || '-'}
+                          </td>
+
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
+                            {externnummer ?? '-'}
+                          </td>
+
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
+                            {omschrijving ?? '-'}
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <button
-                              onClick={() =>
-                                openEditModal(
-                                  regel.ValidatieregelId || regel.validatieregelId,
-                                  regel.Omschrijving || regel.omschrijving || '',
-                                  regel.Expressie || regel.expressie || ''
-                                )
-                              }
-                              className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                              title="Bewerk acceptatieregel"
-                              aria-label={`Bewerk acceptatieregel ${regel.ValidatieregelId || regel.validatieregelId}`}
+                              onClick={() => navigate(`/rules/${regelId}`)}
+                              disabled={!regelId}
+                              className="px-3 py-2 border border-blue-100 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-900/30 neon-outline"
+                              title="Toon regel details"
                             >
-                              <Pencil className="w-4 h-4" />
+                              Details
                             </button>
-                            <button
-                              onClick={() =>
-                                handleDelete(regel.ValidatieregelId || regel.validatieregelId)
-                              }
-                              disabled={deletingId === (regel.ValidatieregelId || regel.validatieregelId)}
-                              className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
-                              title="Verwijder acceptatieregel"
-                              aria-label={`Verwijder acceptatieregel ${regel.ValidatieregelId || regel.validatieregelId}`}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {canManage ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() =>
+                                    openEditModal(
+                                      regelId,
+                                      omschrijving || '',
+                                      regel.Expressie || regel.expressie || ''
+                                    )
+                                  }
+                                  className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                  title="Bewerk acceptatieregel"
+                                  aria-label={`Bewerk acceptatieregel ${regelId}`}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+
+                                <button
+                                  onClick={() => handleDelete(regelId)}
+                                  disabled={deletingId === regelId}
+                                  className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
+                                  title="Verwijder acceptatieregel"
+                                  aria-label={`Verwijder acceptatieregel ${regelId}`}
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">
+                                —
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -296,6 +406,7 @@ const ProductRules = () => {
           </div>
         </div>
       </div>
+
       {showDeleteSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">
@@ -323,6 +434,7 @@ const ProductRules = () => {
           </div>
         </div>
       )}
+
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">
@@ -338,6 +450,7 @@ const ProductRules = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
+
             <form onSubmit={handleEditSubmit} className="px-5 py-4 space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-omschrijving">
@@ -351,6 +464,7 @@ const ProductRules = () => {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-expressie">
                   Aangepaste Xpath expressie
@@ -363,11 +477,13 @@ const ProductRules = () => {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
+
               {editError && (
                 <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 dark:bg-red-900/30 dark:border-red-700/60 dark:text-red-300">
                   {editError}
                 </div>
               )}
+
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"

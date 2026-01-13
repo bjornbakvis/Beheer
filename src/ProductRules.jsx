@@ -1,9 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { RefreshCw, AlertCircle, Pencil, X } from 'lucide-react';
+import { RefreshCw, AlertCircle, Pencil, X, ArrowUpDown } from 'lucide-react';
 import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { authFetch } from './apiAuth';
+
+const normalizeString = (value) => (value ?? '').toString();
+
+const getRegelId = (regel) =>
+  regel?.ValidatieregelId ?? regel?.validatieregelId ?? '';
+
+/**
+ * Jij noemt dit "externnummer".
+ * - Probeert Externnummer eerst (verschillende casing varianten)
+ * - Fallback naar AandResultaatAcceptatie (zoals je tabel nu gebruikt)
+ */
+const getExternnummer = (regel) =>
+  regel?.Externnummer ??
+  regel?.externnummer ??
+  regel?.ExternNummer ??
+  regel?.externNummer ??
+  regel?.AandResultaatAcceptatie ??
+  regel?.aandResultaatAcceptatie ??
+  '';
+
+const getOmschrijving = (regel) =>
+  regel?.Omschrijving ?? regel?.omschrijving ?? '';
+
+const includesTP = (externnummer) =>
+  normalizeString(externnummer).toLowerCase().includes('tp');
 
 const ProductRules = () => {
   const { productId } = useParams();
@@ -19,6 +44,11 @@ const ProductRules = () => {
   const [editExpressie, setEditExpressie] = useState('');
   const [editError, setEditError] = useState(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // ✅ Nieuw: zoeken + sorteren
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('regelId'); // 'regelId' | 'externnummer' | 'omschrijving'
+  const [sortDir, setSortDir] = useState('asc'); // 'asc' | 'desc'
 
   const fetchRules = async () => {
     if (!productId) return;
@@ -52,9 +82,7 @@ const ProductRules = () => {
   useEffect(() => {
     fetchRules();
     const handleEnvChange = () => {
-      if (productId) {
-        fetchRules();
-      }
+      if (productId) fetchRules();
     };
     window.addEventListener('apiEnvChange', handleEnvChange);
     return () => window.removeEventListener('apiEnvChange', handleEnvChange);
@@ -84,10 +112,7 @@ const ProductRules = () => {
         throw new Error(message);
       }
       setRules((prev) =>
-        prev.filter(
-          (regel) =>
-            (regel.ValidatieregelId || regel.validatieregelId) !== regelId
-        )
+        prev.filter((regel) => getRegelId(regel) !== regelId)
       );
       setShowDeleteSuccess(true);
     } catch (err) {
@@ -160,6 +185,84 @@ const ProductRules = () => {
     }
   };
 
+  // ✅ Nieuw: sort click handler
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  // ✅ Nieuw: filter + sort derived list
+  const visibleRules = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    const filtered = !q
+      ? rules
+      : rules.filter((regel) => {
+          const regelId = normalizeString(getRegelId(regel)).toLowerCase();
+          const extern = normalizeString(getExternnummer(regel)).toLowerCase();
+          const oms = normalizeString(getOmschrijving(regel)).toLowerCase();
+          return (
+            regelId.includes(q) ||
+            extern.includes(q) ||
+            oms.includes(q)
+          );
+        });
+
+    const sorted = [...filtered].sort((a, b) => {
+      const aId = normalizeString(getRegelId(a));
+      const bId = normalizeString(getRegelId(b));
+      const aEx = normalizeString(getExternnummer(a));
+      const bEx = normalizeString(getExternnummer(b));
+      const aOm = normalizeString(getOmschrijving(a));
+      const bOm = normalizeString(getOmschrijving(b));
+
+      let av = '';
+      let bv = '';
+
+      if (sortKey === 'regelId') {
+        av = aId;
+        bv = bId;
+      } else if (sortKey === 'externnummer') {
+        av = aEx;
+        bv = bEx;
+      } else if (sortKey === 'omschrijving') {
+        av = aOm;
+        bv = bOm;
+      }
+
+      // localeCompare met numeric werkt fijn voor ids zoals "2" vs "10"
+      const cmp = normalizeString(av).localeCompare(normalizeString(bv), 'nl', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [rules, search, sortKey, sortDir]);
+
+  const SortableTh = ({ label, columnKey }) => {
+    const active = sortKey === columnKey;
+    return (
+      <th
+        onClick={() => toggleSort(columnKey)}
+        role="button"
+        className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider select-none cursor-pointer hover:opacity-80"
+        title="Klik om te sorteren"
+      >
+        <span className="inline-flex items-center gap-2">
+          {label}
+          <ArrowUpDown className={`w-4 h-4 ${active ? 'opacity-100' : 'opacity-50'}`} />
+        </span>
+      </th>
+    );
+  };
+
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
@@ -177,10 +280,24 @@ const ProductRules = () => {
         </div>
 
         <div className="rounded-2xl border border-brand-border brand-card">
-          <div className="p-6 border-b border-brand-border flex items-center justify-between">
-            <p className="text-sm text-brand-muted">
-              Overzicht van validatieregels uit de productdefinitie
-            </p>
+          <div className="p-6 border-b border-brand-border flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm text-brand-muted">
+                Overzicht van validatieregels uit de productdefinitie
+              </p>
+
+              {/* ✅ Nieuw: zoekveld */}
+              <div className="mt-3">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Zoek op RegelID, externnummer of omschrijving..."
+                  className="w-full md:w-[420px] px-3 py-2 rounded-xl border border-brand-border bg-white/80 text-sm text-brand-ink focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
             <button
               onClick={fetchRules}
               disabled={loading}
@@ -210,15 +327,9 @@ const ProductRules = () => {
               <table className="w-full">
                 <thead className="bg-brand-surfaceMuted border-b border-brand-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
-                      ValidatieregelId
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
-                      AandResultaatAcceptatie
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
-                      Omschrijving
-                    </th>
+                    <SortableTh label="RegelID" columnKey="regelId" />
+                    <SortableTh label="Externnummer" columnKey="externnummer" />
+                    <SortableTh label="Omschrijving" columnKey="omschrijving" />
                     <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
                       Details
                     </th>
@@ -227,68 +338,84 @@ const ProductRules = () => {
                     </th>
                   </tr>
                 </thead>
+
                 <tbody className="bg-white divide-y divide-brand-border">
-                  {rules.length === 0 ? (
+                  {visibleRules.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
+                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
                         Geen acceptatieregels gevonden
                       </td>
                     </tr>
                   ) : (
-                    rules.map((regel) => (
-                      <tr key={regel.ValidatieregelId || regel.validatieregelId}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
-                          {regel.ValidatieregelId ?? regel.validatieregelId ?? '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
-                          {regel.AandResultaatAcceptatie ?? regel.aandResultaatAcceptatie ?? '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
-                          {regel.Omschrijving ?? regel.omschrijving ?? '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={() =>
-                              navigate(`/rules/${regel.ValidatieregelId || regel.validatieregelId}`)
-                            }
-                            disabled={!(regel.ValidatieregelId || regel.validatieregelId)}
-                            className="px-3 py-2 border border-blue-100 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-900/30 neon-outline"
-                            title="Toon regel details"
-                          >
-                            Details
-                          </button>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center gap-2">
+                    visibleRules.map((regel) => {
+                      const regelId = getRegelId(regel);
+                      const externnummer = getExternnummer(regel);
+                      const omschrijving = getOmschrijving(regel);
+                      const canManage = includesTP(externnummer);
+
+                      return (
+                        <tr key={regelId || `${externnummer}-${omschrijving}`}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
+                            {regelId || '-'}
+                          </td>
+
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
+                            {externnummer ?? '-'}
+                          </td>
+
+                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
+                            {omschrijving ?? '-'}
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <button
-                              onClick={() =>
-                                openEditModal(
-                                  regel.ValidatieregelId || regel.validatieregelId,
-                                  regel.Omschrijving || regel.omschrijving || '',
-                                  regel.Expressie || regel.expressie || ''
-                                )
-                              }
-                              className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                              title="Bewerk acceptatieregel"
-                              aria-label={`Bewerk acceptatieregel ${regel.ValidatieregelId || regel.validatieregelId}`}
+                              onClick={() => navigate(`/rules/${regelId}`)}
+                              disabled={!regelId}
+                              className="px-3 py-2 border border-blue-100 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-900/30 neon-outline"
+                              title="Toon regel details"
                             >
-                              <Pencil className="w-4 h-4" />
+                              Details
                             </button>
-                            <button
-                              onClick={() =>
-                                handleDelete(regel.ValidatieregelId || regel.validatieregelId)
-                              }
-                              disabled={deletingId === (regel.ValidatieregelId || regel.validatieregelId)}
-                              className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
-                              title="Verwijder acceptatieregel"
-                              aria-label={`Verwijder acceptatieregel ${regel.ValidatieregelId || regel.validatieregelId}`}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {/* ✅ Edit/Delete alleen zichtbaar als externnummer TP bevat */}
+                            {canManage ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() =>
+                                    openEditModal(
+                                      regelId,
+                                      omschrijving || '',
+                                      regel.Expressie || regel.expressie || ''
+                                    )
+                                  }
+                                  className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                  title="Bewerk acceptatieregel"
+                                  aria-label={`Bewerk acceptatieregel ${regelId}`}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+
+                                <button
+                                  onClick={() => handleDelete(regelId)}
+                                  disabled={deletingId === regelId}
+                                  className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
+                                  title="Verwijder acceptatieregel"
+                                  aria-label={`Verwijder acceptatieregel ${regelId}`}
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">
+                                —
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -296,6 +423,7 @@ const ProductRules = () => {
           </div>
         </div>
       </div>
+
       {showDeleteSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">
@@ -323,6 +451,7 @@ const ProductRules = () => {
           </div>
         </div>
       )}
+
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">

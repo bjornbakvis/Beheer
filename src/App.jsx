@@ -623,7 +623,7 @@ const App = () => {
                 </colgroup>
                 <thead className="bg-gray-50 border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('regelId')}
@@ -636,7 +636,7 @@ const App = () => {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('externNummer')}
@@ -649,7 +649,7 @@ const App = () => {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('omschrijving')}
@@ -662,10 +662,10 @@ const App = () => {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       Details
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       Aanpassen
                     </th>
                   </tr>
@@ -673,19 +673,13 @@ const App = () => {
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                   {currentRules.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan="5"
-                        className="px-6 py-8 text-center text-gray-500 dark:text-slate-400"
-                      >
+                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
                         Geen acceptatieregels gevonden
                       </td>
                     </tr>
                   ) : (
                     currentRules.map((rule) => (
-                      <tr
-                        key={rule.regelId}
-                        className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800"
-                      >
+                      <tr key={rule.regelId} className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800">
                         {/* RegelID: zelfde kleur als andere kolommen (niet blauw), wel klikbaar */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-slate-200">
                           <button
@@ -743,10 +737,7 @@ const App = () => {
                               </button>
                             </div>
                           ) : (
-                            <span
-                              className="text-xs text-gray-400"
-                              title="Alleen TP-regels zijn aanpasbaar"
-                            >
+                            <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">
                               —
                             </span>
                           )}

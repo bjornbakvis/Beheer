@@ -33,6 +33,7 @@ const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const restoredListRef = useRef(false);
+
   const makeId = () =>
     crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10);
   const createEmptyCondition = () => ({
@@ -51,6 +52,7 @@ const App = () => {
     records: [createEmptyRecord()],
   }));
   const [builderError, setBuilderError] = useState(null);
+
   const operatorOptions = [
     { value: '=', label: '=' },
     { value: '!=', label: '!=' },
@@ -121,7 +123,7 @@ const App = () => {
         { regelId: 'R010', externNummer: 'EXT-2024-010', omschrijving: 'Documentatie vereisten voor aanvraag' },
         { regelId: 'R011', externNummer: 'EXT-2024-011', omschrijving: 'Gezondheidsverklaring verplicht vanaf leeftijd' },
         { regelId: 'R012', externNummer: 'EXT-2024-012', omschrijving: 'Eigen risico minimum en maximum' },
-        { regelId: 'R013', externNummer: 'EXT-2024-013', omschrijving: 'Acceptatie criteria voor gevaarlijke hobby\'s' },
+        { regelId: 'R013', externNummer: 'EXT-2024-013', omschrijving: "Acceptatie criteria voor gevaarlijke hobby's" },
         { regelId: 'R014', externNummer: 'EXT-2024-014', omschrijving: 'Polisvoorwaarden voor meerdere verzekeringen' },
         { regelId: 'R015', externNummer: 'EXT-2024-015', omschrijving: 'Annuleringsrecht binnen koelingsperiode' },
       ]);
@@ -206,7 +208,6 @@ const App = () => {
 
     return sorted;
   }, [rules, searchTerm, sortKey, sortDir]);
-
 
   const totalPages = Math.max(1, Math.ceil(filteredRules.length / rulesPerPage));
   const safePage = Math.min(currentPage, totalPages);
@@ -613,8 +614,9 @@ const App = () => {
             ) : (
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: '160px' }} />
-                  <col style={{ width: '220px' }} />
+                  {/* 65% van oorspronkelijke breedte: 160px -> 104px, 220px -> 143px */}
+                  <col style={{ width: '104px' }} />
+                  <col style={{ width: '143px' }} />
                   <col />
                   <col style={{ width: '120px' }} />
                   <col style={{ width: '150px' }} />
@@ -671,14 +673,21 @@ const App = () => {
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                   {currentRules.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
+                      <td
+                        colSpan="5"
+                        className="px-6 py-8 text-center text-gray-500 dark:text-slate-400"
+                      >
                         Geen acceptatieregels gevonden
                       </td>
                     </tr>
                   ) : (
                     currentRules.map((rule) => (
-                      <tr key={rule.regelId} className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700 dark:text-blue-300">
+                      <tr
+                        key={rule.regelId}
+                        className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800"
+                      >
+                        {/* RegelID: zelfde kleur als andere kolommen (niet blauw), wel klikbaar */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-slate-200">
                           <button
                             onClick={() =>
                               navigate(`/rules/${rule.regelId}`, {
@@ -734,7 +743,12 @@ const App = () => {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">—</span>
+                            <span
+                              className="text-xs text-gray-400"
+                              title="Alleen TP-regels zijn aanpasbaar"
+                            >
+                              —
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -748,7 +762,8 @@ const App = () => {
           {rules.length > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between dark:border-slate-700">
               <div className="text-sm text-gray-700 dark:text-slate-200">
-                Toont {filteredRules.length === 0 ? 0 : indexOfFirstRule + 1} tot {Math.min(indexOfLastRule, filteredRules.length)} van {filteredRules.length} regels
+                Toont {filteredRules.length === 0 ? 0 : indexOfFirstRule + 1} tot{' '}
+                {Math.min(indexOfLastRule, filteredRules.length)} van {filteredRules.length} regels
               </div>
               <div className="flex gap-2">
                 <button
@@ -779,11 +794,12 @@ const App = () => {
                         {pageNumber}
                       </button>
                     );
-                  } else if (
-                    pageNumber === safePage - 2 ||
-                    pageNumber === safePage + 2
-                  ) {
-                    return <span key={pageNumber} className="px-2 py-2 text-gray-500 dark:text-slate-400">...</span>;
+                  } else if (pageNumber === safePage - 2 || pageNumber === safePage + 2) {
+                    return (
+                      <span key={pageNumber} className="px-2 py-2 text-gray-500 dark:text-slate-400">
+                        ...
+                      </span>
+                    );
                   }
                   return null;
                 })}
@@ -800,6 +816,7 @@ const App = () => {
           )}
         </div>
       </div>
+
       {showDeleteSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-2xl border border-brand-border brand-modal">
@@ -827,6 +844,7 @@ const App = () => {
           </div>
         </div>
       )}
+
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-brand-border brand-modal">
@@ -840,10 +858,7 @@ const App = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <form
-              onSubmit={handleCreateSubmit}
-              className="px-5 py-4 space-y-4 max-h-[75vh] overflow-y-auto"
-            >
+            <form onSubmit={handleCreateSubmit} className="px-5 py-4 space-y-4 max-h-[75vh] overflow-y-auto">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="omschrijving">
                   Omschrijving
@@ -857,6 +872,7 @@ const App = () => {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="expressie">
                   Xpath Expressie
@@ -869,11 +885,13 @@ const App = () => {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
+
               <div className="flex items-center gap-3 text-xs font-medium text-gray-400 uppercase tracking-widest">
                 <span className="flex-1 h-px bg-gray-200 dark:bg-slate-700"></span>
                 <span>---- OF ----</span>
                 <span className="flex-1 h-px bg-gray-200 dark:bg-slate-700"></span>
               </div>
+
               <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4 space-y-4 dark:border-slate-700 dark:bg-slate-800/40">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -891,6 +909,7 @@ const App = () => {
                     Vul Xpath Expressie
                   </button>
                 </div>
+
                 {xpathBuilder.records.map((record, recordIndex) => (
                   <div
                     key={record.id}
@@ -907,9 +926,7 @@ const App = () => {
                         <select
                           id={`record-joiner-${record.id}`}
                           value={record.joiner}
-                          onChange={(event) =>
-                            handleRecordUpdate(record.id, { joiner: event.target.value })
-                          }
+                          onChange={(event) => handleRecordUpdate(record.id, { joiner: event.target.value })}
                           className="px-2 py-1 border border-gray-300 rounded-md text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                         >
                           {joinerOptions.map((option) => (
@@ -920,6 +937,7 @@ const App = () => {
                         </select>
                       </div>
                     )}
+
                     <div className="flex flex-col gap-2">
                       <label
                         className="text-xs font-medium text-gray-600 dark:text-slate-300"
@@ -932,29 +950,22 @@ const App = () => {
                           id={`rubriek-${record.id}`}
                           type="text"
                           value={record.rubriek}
-                          onChange={(event) =>
-                            handleRecordUpdate(record.id, { rubriek: event.target.value })
-                          }
+                          onChange={(event) => handleRecordUpdate(record.id, { rubriek: event.target.value })}
                           placeholder="Bijv. PG_456"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                         />
                         <div className="relative group">
-                          <Info
-                            className="w-4 h-4 text-gray-400 dark:text-slate-400"
-                            aria-label="Info over rubriek"
-                          />
+                          <Info className="w-4 h-4 text-gray-400 dark:text-slate-400" aria-label="Info over rubriek" />
                           <div className="pointer-events-none absolute right-0 top-6 w-72 rounded-md bg-gray-900 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            Plaats hier de entiteit_Tp nummer of AFD subentiteit. Voorbeeld TP nummer:
-                            PG_456. Voorbeeld AFD: OB_KENTEKE.
+                            Plaats hier de entiteit_Tp nummer of AFD subentiteit. Voorbeeld TP nummer: PG_456. Voorbeeld
+                            AFD: OB_KENTEKE.
                           </div>
                         </div>
                       </div>
                     </div>
+
                     {record.conditions.map((condition, conditionIndex) => (
-                      <div
-                        key={condition.id}
-                        className="flex flex-wrap items-end gap-3"
-                      >
+                      <div key={condition.id} className="flex flex-wrap items-end gap-3">
                         {conditionIndex > 0 && (
                           <div className="min-w-[70px]">
                             <label
@@ -967,9 +978,7 @@ const App = () => {
                               id={`condition-joiner-${condition.id}`}
                               value={condition.joiner}
                               onChange={(event) =>
-                                handleConditionUpdate(record.id, condition.id, {
-                                  joiner: event.target.value,
-                                })
+                                handleConditionUpdate(record.id, condition.id, { joiner: event.target.value })
                               }
                               className="mt-1 w-full px-2 py-1 border border-gray-300 rounded-md text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                             >
@@ -981,6 +990,7 @@ const App = () => {
                             </select>
                           </div>
                         )}
+
                         <div className="flex-1 min-w-[140px]">
                           <label
                             className="text-xs font-medium text-gray-600 dark:text-slate-300"
@@ -992,9 +1002,7 @@ const App = () => {
                             id={`operator-${condition.id}`}
                             value={condition.operator}
                             onChange={(event) =>
-                              handleConditionUpdate(record.id, condition.id, {
-                                operator: event.target.value,
-                              })
+                              handleConditionUpdate(record.id, condition.id, { operator: event.target.value })
                             }
                             className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                           >
@@ -1005,6 +1013,7 @@ const App = () => {
                             ))}
                           </select>
                         </div>
+
                         <div className="flex-1 min-w-[160px]">
                           <label
                             className="text-xs font-medium text-gray-600 dark:text-slate-300"
@@ -1016,21 +1025,16 @@ const App = () => {
                             id={`waarde-${condition.id}`}
                             type="text"
                             value={condition.value}
-                            onChange={(event) =>
-                              handleConditionUpdate(record.id, condition.id, {
-                                value: event.target.value,
-                              })
-                            }
+                            onChange={(event) => handleConditionUpdate(record.id, condition.id, { value: event.target.value })}
                             placeholder="Bijv. 15"
                             className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                           />
                         </div>
+
                         {conditionIndex > 0 && (
                           <button
                             type="button"
-                            onClick={() =>
-                              handleRemoveCondition(record.id, condition.id)
-                            }
+                            onClick={() => handleRemoveCondition(record.id, condition.id)}
                             className="px-2 py-2 text-xs font-medium text-gray-600 hover:text-gray-800 dark:text-slate-300 dark:hover:text-slate-100"
                           >
                             Verwijder
@@ -1038,6 +1042,7 @@ const App = () => {
                         )}
                       </div>
                     ))}
+
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <button
                         type="button"
@@ -1058,6 +1063,7 @@ const App = () => {
                     </div>
                   </div>
                 ))}
+
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <button
                     type="button"
@@ -1066,13 +1072,10 @@ const App = () => {
                   >
                     + Rubriek toevoegen
                   </button>
-                  {builderError && (
-                    <span className="text-xs text-red-600 dark:text-red-300">
-                      {builderError}
-                    </span>
-                  )}
+                  {builderError && <span className="text-xs text-red-600 dark:text-red-300">{builderError}</span>}
                 </div>
               </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="afd-branchecode">
                   Afd branchecode
@@ -1085,11 +1088,13 @@ const App = () => {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
+
               {createError && (
                 <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 dark:bg-red-900/30 dark:border-red-700/60 dark:text-red-300">
                   {createError}
                 </div>
               )}
+
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -1110,6 +1115,7 @@ const App = () => {
           </div>
         </div>
       )}
+
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-brand-border brand-modal">
@@ -1125,6 +1131,7 @@ const App = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
+
             <form onSubmit={handleEditSubmit} className="px-5 py-4 space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-omschrijving">
@@ -1138,6 +1145,7 @@ const App = () => {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-expressie">
                   Aangepaste Xpath expressie
@@ -1150,11 +1158,13 @@ const App = () => {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
+
               {editError && (
                 <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 dark:bg-red-900/30 dark:border-red-700/60 dark:text-red-300">
                   {editError}
                 </div>
               )}
+
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"

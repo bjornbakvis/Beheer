@@ -11,8 +11,8 @@ const App = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortKey, setSortKey] = useState('regelId'); // default
-  const [sortDir, setSortDir] = useState('asc');
+  const [sortKey, setSortKey] = useState('regelId'); // regelId | externNummer | omschrijving
+  const [sortDir, setSortDir] = useState('asc'); // asc | desc
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -147,14 +147,14 @@ const App = () => {
       if (typeof listState.searchTerm === 'string') {
         setSearchTerm(listState.searchTerm);
       }
-      if (Number.isFinite(listState.currentPage)) {
-        setCurrentPage(listState.currentPage);
-      }
       if (typeof listState.sortKey === 'string') {
         setSortKey(listState.sortKey);
       }
-      if (listState.sortDir === 'asc' || listState.sortDir === 'desc') {
+      if (typeof listState.sortDir === 'string') {
         setSortDir(listState.sortDir);
+      }
+      if (Number.isFinite(listState.currentPage)) {
+        setCurrentPage(listState.currentPage);
       }
       restoredListRef.current = true;
     }
@@ -175,33 +175,38 @@ const App = () => {
     const filtered = !q
       ? rules
       : rules.filter((rule) => {
-          const regelId = normalize(rule.regelId).toLowerCase();
-          const extern = normalize(rule.externNummer).toLowerCase();
-          const oms = normalize(rule.omschrijving).toLowerCase();
+          const regelId = (rule.regelId ?? '').toString().toLowerCase();
+          const extern = (rule.externNummer ?? '').toString().toLowerCase();
+          const oms = (rule.omschrijving ?? '').toString().toLowerCase();
           return regelId.includes(q) || extern.includes(q) || oms.includes(q);
         });
 
     const sorted = [...filtered].sort((a, b) => {
       const av =
         sortKey === 'regelId'
-          ? normalize(a.regelId)
+          ? (a.regelId ?? '')
           : sortKey === 'externNummer'
-            ? normalize(a.externNummer)
-            : normalize(a.omschrijving);
+            ? (a.externNummer ?? '')
+            : (a.omschrijving ?? '');
 
       const bv =
         sortKey === 'regelId'
-          ? normalize(b.regelId)
+          ? (b.regelId ?? '')
           : sortKey === 'externNummer'
-            ? normalize(b.externNummer)
-            : normalize(b.omschrijving);
+            ? (b.externNummer ?? '')
+            : (b.omschrijving ?? '');
 
-      const cmp = av.localeCompare(bv, 'nl', { numeric: true, sensitivity: 'base' });
+      const cmp = av.toString().localeCompare(bv.toString(), 'nl', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+
       return sortDir === 'asc' ? cmp : -cmp;
     });
 
     return sorted;
   }, [rules, searchTerm, sortKey, sortDir]);
+
 
   const totalPages = Math.max(1, Math.ceil(filteredRules.length / rulesPerPage));
   const safePage = Math.min(currentPage, totalPages);
@@ -567,7 +572,7 @@ const App = () => {
                   type="text"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  placeholder="Zoek op Regel ID (bijv. 60_200)"
+                  placeholder="Zoek op Regel ID, Extern Nummer of Omschrijving (deelmatch)"
                   className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
                 <button
@@ -606,22 +611,59 @@ const App = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : (
-              <table className="w-full">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: '160px' }} />
+                  <col style={{ width: '220px' }} />
+                  <col />
+                  <col style={{ width: '120px' }} />
+                  <col style={{ width: '150px' }} />
+                </colgroup>
                 <thead className="bg-gray-50 border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
-                      Regel ID
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('regelId')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        Regel ID{' '}
+                        <span className="inline-block w-4 text-right">
+                          {sortKey === 'regelId' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
+                      </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
-                      Extern Nummer
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('externNummer')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        Extern Nummer{' '}
+                        <span className="inline-block w-4 text-right">
+                          {sortKey === 'externNummer' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
+                      </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
-                      Omschrijving
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('omschrijving')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        Omschrijving{' '}
+                        <span className="inline-block w-4 text-right">
+                          {sortKey === 'omschrijving' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
+                      </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       Details
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       Aanpassen
                     </th>
                   </tr>
@@ -634,29 +676,30 @@ const App = () => {
                       </td>
                     </tr>
                   ) : (
-                    currentRules.map((rule) => {
-                      const canManage = normalize(rule.externNummer).toLowerCase().includes('tp');
-                      return (
+                    currentRules.map((rule) => (
                       <tr key={rule.regelId} className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700 dark:text-blue-300 text-center">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700 dark:text-blue-300">
                           <button
                             onClick={() =>
                               navigate(`/rules/${rule.regelId}`, {
                                 state: { listState: { searchTerm, currentPage, sortKey, sortDir } },
                               })
                             }
-                            className="hover:underline inline-block"
+                            className="hover:underline"
                           >
                             {rule.regelId}
                           </button>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-200 text-center">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-200">
                           {rule.externNummer}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
+                        <td
+                          className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200 truncate"
+                          title={rule.omschrijving}
+                        >
                           {rule.omschrijving}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <button
                             onClick={() =>
                               navigate(`/rules/${rule.regelId}`, {
@@ -670,40 +713,32 @@ const App = () => {
                           </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {canManage ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() =>
-                                openEditModal(rule.regelId, rule.omschrijving, rule.expressie)
-                              }
-                              className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                              title="Bewerk acceptatieregel"
-                              aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(rule.regelId)}
-                              disabled={deletingId === rule.regelId}
-                              className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
-                              title="Verwijder acceptatieregel"
-                              aria-label={`Verwijder acceptatieregel ${rule.regelId}`}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <span
-                            className="text-xs text-gray-400"
-                            title="Alleen TP-regels zijn aanpasbaar"
-                          >
-                            —
-                          </span>
-                        )}
+                          {rule.externNummer?.toString().toLowerCase().includes('tp') ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
+                                className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                title="Bewerk acceptatieregel"
+                                aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(rule.regelId)}
+                                disabled={deletingId === rule.regelId}
+                                className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
+                                title="Verwijder acceptatieregel"
+                                aria-label={`Verwijder acceptatieregel ${rule.regelId}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">—</span>
+                          )}
                         </td>
                       </tr>
-                      );
-                    })
+                    ))
                   )}
                 </tbody>
               </table>

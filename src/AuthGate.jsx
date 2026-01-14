@@ -14,12 +14,8 @@ import { withApiEnv } from './apiEnv';
  *
  * - Blokkeert de app totdat geldige Basic Auth credentials zijn ingevoerd
  * - Toont een modal met gebruikersnaam + wachtwoord
- * - Geeft een nette foutmelding bij onjuist wachtwoord (401)
+ * - Geeft een rode foutmelding bij onjuist wachtwoord
  * - Voorkomt "stil terugverspringen" naar home
- *
- * Let op:
- * - Credentials worden alleen in sessionStorage opgeslagen
- * - Backend (Python) blijft ongewijzigd
  */
 
 const AuthGate = ({ children }) => {
@@ -29,7 +25,7 @@ const AuthGate = ({ children }) => {
   const [error, setError] = useState(null);
   const [checking, setChecking] = useState(false);
 
-  // Luister naar auth veranderingen (login / logout)
+  // Luister naar login / logout
   useEffect(() => {
     const onAuthChange = () => {
       setHasAuth(Boolean(getAuthCredentials()));
@@ -38,7 +34,7 @@ const AuthGate = ({ children }) => {
     return () => window.removeEventListener('authChange', onAuthChange);
   }, []);
 
-  // Toon foutmelding als een API-call 401 teruggeeft
+  // Toon foutmelding bij 401 vanuit API
   useEffect(() => {
     const handleAuthError = () => {
       const code = getAuthError();
@@ -73,8 +69,7 @@ const AuthGate = ({ children }) => {
     setChecking(true);
 
     try {
-      // 🔐 Check credentials één keer tegen een beveiligd endpoint
-      // Pas NA succesvolle check slaan we ze op
+      // Eerst credentials controleren tegen een beveiligd endpoint
       const testUrl = withApiEnv('/api/products');
       const res = await fetch(testUrl, {
         headers: {
@@ -92,7 +87,7 @@ const AuthGate = ({ children }) => {
         return;
       }
 
-      // ✅ Succesvol: credentials opslaan
+      // Succesvol → credentials opslaan
       setAuthCredentials(u, p);
       setUser('');
       setPass('');
@@ -105,12 +100,12 @@ const AuthGate = ({ children }) => {
     }
   };
 
-  // Als we ingelogd zijn: app tonen
+  // Ingelogd → app tonen
   if (hasAuth) {
     return children;
   }
 
-  // Anders: login modal tonen
+  // Niet ingelogd → login modal
   return (
     <div className="min-h-screen brand-page">
       {/* App blokkeren */}
@@ -171,7 +166,7 @@ const AuthGate = ({ children }) => {
             </div>
 
             {error && (
-              <div className="text-sm text-brand-primary">
+              <div className="text-sm text-red-600">
                 {error}
               </div>
             )}
@@ -181,7 +176,7 @@ const AuthGate = ({ children }) => {
               disabled={!canSubmit}
               className="w-full px-4 py-2.5 rounded-xl text-white font-medium disabled:opacity-60 brand-primary"
             >
-              {checking ? 'Controleren…' : 'Doorgaan'}
+              {checking ? 'Inloggen…' : 'Doorgaan'}
             </button>
 
             <p className="text-xs text-brand-muted">

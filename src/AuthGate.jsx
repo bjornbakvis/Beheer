@@ -1,49 +1,104 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Lock } from 'lucide-react';
-import { getAuthCredentials, setAuthCredentials } from './apiAuth';
-
-// Simple UI gate: if no credentials are stored, hide the app and show a branded modal.
-// Note: This keeps using Basic Auth credentials stored in sessionStorage (current approach).
+import {
+  getAuthCredentials,
+  setAuthCredentials,
+  getLastAuthError,
+  setLastAuthError,
+} from './apiAuth';
 
 const AuthGate = ({ children }) => {
   const [hasAuth, setHasAuth] = useState(Boolean(getAuthCredentials()));
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState(null);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    const onAuthChange = () => setHasAuth(Boolean(getAuthCredentials()));
+    // Als we terugkomen naar login door een 401 ergens, toon die melding
+    const last = getLastAuthError();
+    if (last) setError(last);
+
+    const onAuthChange = () => {
+      setHasAuth(Boolean(getAuthCredentials()));
+      // Als creds weg zijn (uitgelogd), laat eventuele last error staan
+      // zodat de gebruiker snapt waarom.
+      if (!getAuthCredentials()) {
+        const e = getLastAuthError();
+        if (e) setError(e);
+      }
+    };
+
     window.addEventListener('authChange', onAuthChange);
     return () => window.removeEventListener('authChange', onAuthChange);
   }, []);
 
   const canSubmit = useMemo(
-    () => user.trim().length > 0 && pass.length > 0,
-    [user, pass]
+    () => user.trim().length > 0 && pass.length > 0 && !checking,
+    [user, pass, checking]
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!canSubmit) {
+    setLastAuthError(null);
+
+    if (!user.trim() || !pass) {
       setError('Vul gebruikersnaam en wachtwoord in.');
       return;
     }
-    setAuthCredentials(user.trim(), pass);
-    setUser('');
-    setPass('');
+
+    setChecking(true);
+
+    try {
+      // 1) Check de combinatie via onze eigen simpele endpoint.
+      // Dit staat los van Kinetic/Dias etc.
+      const token = btoa(`${user.trim()}:${pass}`);
+      const resp = await fetch('/api/login', {
+        method: 'GET',
+        headers: { Authorization: `Basic ${token}` },
+      });
+
+      if (resp.status === 401) {
+        // Fout = niet inloggen
+        setError('Gebruikersnaam en/of wachtwoord onjuist.');
+        return;
+      }
+
+      if (!resp.ok) {
+        // Jij wil: ook als API’s “stuk” zijn toch kunnen inloggen.
+        // /api/login hoort eigenlijk bijna nooit stuk te zijn, maar als dat wel zo is:
+        // we laten toch door, met een waarschuwing.
+        setError(
+          'Let op: inlogcontrole kon niet worden uitgevoerd (serverfout). Je bent toch ingelogd.'
+        );
+      }
+
+      // 2) Bewaar creds en laat app zien
+      setAuthCredentials(user.trim(), pass);
+      setUser('');
+      setPass('');
+    } catch (err) {
+      // Network/timeout: toch door laten (zoals jij wilt), met waarschuwing.
+      setError(
+        'Let op: inlogcontrole kon niet worden uitgevoerd (geen verbinding). Je bent toch ingelogd.'
+      );
+      setAuthCredentials(user.trim(), pass);
+      setUser('');
+      setPass('');
+    } finally {
+      setChecking(false);
+    }
   };
 
   if (hasAuth) return children;
 
   return (
     <div className="min-h-screen brand-page">
-      {/* Hard-hide app until auth */}
       <div className="fixed inset-0 bg-white/40 backdrop-blur-sm" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <div className="brand-modal w-full max-w-md rounded-2xl p-6">
-          {/* Centered logo */}
           <div className="flex justify-center mb-4">
             <img
               src="/logo.png"
@@ -52,14 +107,11 @@ const AuthGate = ({ children }) => {
             />
           </div>
 
-          {/* Header (left aligned) */}
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
               <Lock className="w-5 h-5 text-brand-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-brand-ink">
-              Inloggen
-            </h2>
+            <h2 className="text-lg font-semibold text-brand-ink">Inloggen</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -90,9 +142,7 @@ const AuthGate = ({ children }) => {
             </div>
 
             {error ? (
-              <div className="text-sm text-brand-primary">
-                {error}
-              </div>
+              <div className="text-sm text-red-600">{error}</div>
             ) : null}
 
             <button
@@ -100,7 +150,7 @@ const AuthGate = ({ children }) => {
               disabled={!canSubmit}
               className="w-full px-4 py-2.5 rounded-xl text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed brand-primary"
             >
-              Doorgaan
+              {checking ? 'Controleren...' : 'Doorgaan'}
             </button>
 
             <p className="text-xs text-brand-muted">

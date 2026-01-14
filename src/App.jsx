@@ -630,8 +630,8 @@ const App = () => {
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        Regel ID{' '}
-                        <span className="inline-block w-4 text-right">
+                        REGEL ID{' '}
+                        <span className="inline-block w-4 text-right text-[1em] leading-none">
                           {sortKey === 'regelId' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                         </span>
                       </button>
@@ -643,8 +643,8 @@ const App = () => {
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        Extern Nummer{' '}
-                        <span className="inline-block w-4 text-right">
+                        EXTERN NUMMER{' '}
+                        <span className="inline-block w-4 text-right text-[1em] leading-none">
                           {sortKey === 'externNummer' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                         </span>
                       </button>
@@ -656,17 +656,17 @@ const App = () => {
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        Omschrijving{' '}
-                        <span className="inline-block w-4 text-right">
+                        OMSCHRIJVING{' '}
+                        <span className="inline-block w-4 text-right text-[1em] leading-none">
                           {sortKey === 'omschrijving' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                         </span>
                       </button>
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
-                      Details
+                      DETAILS
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
-                      Aanpassen
+                      AANPASSEN
                     </th>
                   </tr>
                 </thead>

@@ -9,12 +9,17 @@ const App = () => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [currentPage, setCurrentPage] = useState(1);
+  const rulesPerPage = 10;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [sortKey, setSortKey] = useState('regelId'); // regelId | externNummer | omschrijving
   const [sortDir, setSortDir] = useState('asc'); // asc | desc
+
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     omschrijving: '',
@@ -23,34 +28,40 @@ const App = () => {
   });
   const [createError, setCreateError] = useState(null);
   const [createSubmitting, setCreateSubmitting] = useState(false);
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [editRuleId, setEditRuleId] = useState(null);
   const [editOmschrijving, setEditOmschrijving] = useState('');
   const [editExpressie, setEditExpressie] = useState('');
   const [editError, setEditError] = useState(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
-  const rulesPerPage = 10;
+
   const navigate = useNavigate();
   const location = useLocation();
   const restoredListRef = useRef(false);
 
+  // ---- Xpath builder helpers/state ----
   const makeId = () =>
     crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10);
+
   const createEmptyCondition = () => ({
     id: makeId(),
     operator: '=',
     value: '',
     joiner: 'and',
   });
+
   const createEmptyRecord = () => ({
     id: makeId(),
     rubriek: '',
     joiner: 'and',
     conditions: [createEmptyCondition()],
   });
+
   const [xpathBuilder, setXpathBuilder] = useState(() => ({
     records: [createEmptyRecord()],
   }));
+
   const [builderError, setBuilderError] = useState(null);
 
   const operatorOptions = [
@@ -65,6 +76,7 @@ const App = () => {
     { value: 'starts-with', label: 'starts-with' },
     { value: 'ends-with', label: 'ends-with' },
   ];
+
   const joinerOptions = [
     { value: 'and', label: 'EN' },
     { value: 'or', label: 'OF' },
@@ -104,7 +116,6 @@ const App = () => {
       }
 
       const data = await response.json();
-      // Support multiple shapes: {rules: [...]}, {data: [...]}, or direct array/object
       const normalized = normalizeRules(data.rules || data.data || data);
       setRules(normalized);
     } catch (err) {
@@ -143,21 +154,14 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Restore list state after returning from details view
   useEffect(() => {
     const listState = location.state?.listState;
     if (!restoredListRef.current && listState) {
-      if (typeof listState.searchTerm === 'string') {
-        setSearchTerm(listState.searchTerm);
-      }
-      if (typeof listState.sortKey === 'string') {
-        setSortKey(listState.sortKey);
-      }
-      if (typeof listState.sortDir === 'string') {
-        setSortDir(listState.sortDir);
-      }
-      if (Number.isFinite(listState.currentPage)) {
-        setCurrentPage(listState.currentPage);
-      }
+      if (typeof listState.searchTerm === 'string') setSearchTerm(listState.searchTerm);
+      if (typeof listState.sortKey === 'string') setSortKey(listState.sortKey);
+      if (typeof listState.sortDir === 'string') setSortDir(listState.sortDir);
+      if (Number.isFinite(listState.currentPage)) setCurrentPage(listState.currentPage);
       restoredListRef.current = true;
     }
   }, [location.state]);
@@ -211,6 +215,7 @@ const App = () => {
 
   const totalPages = Math.max(1, Math.ceil(filteredRules.length / rulesPerPage));
   const safePage = Math.min(currentPage, totalPages);
+
   const indexOfLastRule = safePage * rulesPerPage;
   const indexOfFirstRule = indexOfLastRule - rulesPerPage;
   const currentRules = filteredRules.slice(indexOfFirstRule, indexOfLastRule);
@@ -228,6 +233,7 @@ const App = () => {
     if (!regelId) return;
     setDeletingId(regelId);
     setError(null);
+
     try {
       const response = await authFetch(
         withApiEnv(`/api/acceptance-rules?regelId=${encodeURIComponent(regelId)}`),
@@ -236,6 +242,7 @@ const App = () => {
           headers: { 'Cache-Control': 'no-store' },
         }
       );
+
       if (!response.ok) {
         let message = `Failed to delete rule (status ${response.status})`;
         try {
@@ -246,6 +253,7 @@ const App = () => {
         }
         throw new Error(message);
       }
+
       setRules((prev) => prev.filter((rule) => rule.regelId !== regelId));
       setShowDeleteSuccess(true);
     } catch (err) {
@@ -260,16 +268,16 @@ const App = () => {
     setCurrentPage(1);
   };
 
+  // ---- Create form ----
   const handleCreateInputChange = (field) => (event) => {
     setCreateForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
+  // ---- Xpath builder state updates ----
   const handleRecordUpdate = (recordId, updates) => {
     setXpathBuilder((prev) => ({
       ...prev,
-      records: prev.records.map((record) =>
-        record.id === recordId ? { ...record, ...updates } : record
-      ),
+      records: prev.records.map((record) => (record.id === recordId ? { ...record, ...updates } : record)),
     }));
     setBuilderError(null);
   };
@@ -294,9 +302,7 @@ const App = () => {
     setXpathBuilder((prev) => ({
       ...prev,
       records: prev.records.map((record) =>
-        record.id === recordId
-          ? { ...record, conditions: [...record.conditions, createEmptyCondition()] }
-          : record
+        record.id === recordId ? { ...record, conditions: [...record.conditions, createEmptyCondition()] } : record
       ),
     }));
     setBuilderError(null);
@@ -308,10 +314,7 @@ const App = () => {
       records: prev.records.map((record) => {
         if (record.id !== recordId) return record;
         const remaining = record.conditions.filter((condition) => condition.id !== conditionId);
-        return {
-          ...record,
-          conditions: remaining.length ? remaining : [createEmptyCondition()],
-        };
+        return { ...record, conditions: remaining.length ? remaining : [createEmptyCondition()] };
       }),
     }));
     setBuilderError(null);
@@ -328,14 +331,12 @@ const App = () => {
   const handleRemoveRecord = (recordId) => {
     setXpathBuilder((prev) => {
       const remaining = prev.records.filter((record) => record.id !== recordId);
-      return {
-        ...prev,
-        records: remaining.length ? remaining : [createEmptyRecord()],
-      };
+      return { ...prev, records: remaining.length ? remaining : [createEmptyRecord()] };
     });
     setBuilderError(null);
   };
 
+  // ---- Xpath expression builder ----
   const normalizeJoiner = (joiner) => (joiner === 'or' ? 'or' : 'and');
 
   const isNumericValue = (value) => /^-?\d+$/.test(value);
@@ -351,14 +352,17 @@ const App = () => {
   const buildConditionExpression = (rubriek, condition) => {
     const value = condition.value.trim();
     if (!value) return null;
+
     const fieldPath = `//${rubriek}`;
     const fieldLower = `lower-case(${fieldPath})`;
     const valueLiteral = buildXPathLiteral(value);
     const valueLower = `lower-case(${valueLiteral})`;
+
     const numericOperators = ['>', '<', '>=', '<='];
     if (numericOperators.includes(condition.operator) && isNumericValue(value)) {
       return `number(${fieldPath}) ${condition.operator} ${value}`;
     }
+
     switch (condition.operator) {
       case '=':
         return `${fieldLower} = ${valueLower}`;
@@ -385,17 +389,20 @@ const App = () => {
   const buildRecordExpression = (record) => {
     const rubriek = record.rubriek.trim();
     if (!rubriek) return null;
+
     const conditionExpressions = record.conditions
       .map((condition) => buildConditionExpression(rubriek, condition))
       .filter(Boolean);
+
     if (conditionExpressions.length === 0) return null;
+
     let combined = conditionExpressions[0];
     for (let i = 1; i < conditionExpressions.length; i += 1) {
       const joiner = normalizeJoiner(record.conditions[i].joiner);
       combined = `${combined} ${joiner} ${conditionExpressions[i]}`;
     }
-    const conditionBlock =
-      conditionExpressions.length > 1 ? `((${combined}))` : `(${combined})`;
+
+    const conditionBlock = conditionExpressions.length > 1 ? `((${combined}))` : `(${combined})`;
     return `(fn:exists(//${rubriek}) and ${conditionBlock})`;
   };
 
@@ -406,11 +413,14 @@ const App = () => {
         joiner: normalizeJoiner(record.joiner),
       }))
       .filter((record) => record.expr);
+
     if (recordExpressions.length === 0) return '';
+
     let combined = recordExpressions[0].expr;
     for (let i = 1; i < recordExpressions.length; i += 1) {
       combined = `${combined} ${recordExpressions[i].joiner} ${recordExpressions[i].expr}`;
     }
+
     return `if(( ${combined} )) then false() else true()`;
   };
 
@@ -424,6 +434,7 @@ const App = () => {
     setBuilderError(null);
   };
 
+  // ---- Edit modal ----
   const openEditModal = (regelId, omschrijvingValue, expressieValue) => {
     setEditRuleId(regelId);
     setEditOmschrijving(omschrijvingValue || '');
@@ -435,6 +446,7 @@ const App = () => {
   const handleEditSubmit = async (event) => {
     event.preventDefault();
     setEditError(null);
+
     if (!editRuleId) {
       setEditError('RegelId ontbreekt.');
       return;
@@ -457,6 +469,7 @@ const App = () => {
         Expressie: editExpressie.trim(),
         ResourceId: resourceId,
       };
+
       const response = await authFetch(withApiEnv('/api/acceptance-rules'), {
         method: 'PUT',
         headers: {
@@ -465,6 +478,7 @@ const App = () => {
         },
         body: JSON.stringify(payload),
       });
+
       if (!response.ok) {
         let message = `Failed to update rule (status ${response.status})`;
         try {
@@ -475,6 +489,7 @@ const App = () => {
         }
         throw new Error(message);
       }
+
       setShowEditModal(false);
       setEditRuleId(null);
       setEditOmschrijving('');
@@ -487,6 +502,7 @@ const App = () => {
     }
   };
 
+  // ---- Create submit ----
   const handleCreateSubmit = async (event) => {
     event.preventDefault();
     setCreateError(null);
@@ -514,6 +530,7 @@ const App = () => {
     }
 
     setCreateSubmitting(true);
+
     try {
       const resourceId = crypto?.randomUUID ? crypto.randomUUID() : undefined;
       const payload = {
@@ -522,6 +539,7 @@ const App = () => {
         Expressie: expressie,
         ResourceId: resourceId,
       };
+
       const response = await authFetch(withApiEnv('/api/acceptance-rules'), {
         method: 'PUT',
         headers: {
@@ -530,6 +548,7 @@ const App = () => {
         },
         body: JSON.stringify(payload),
       });
+
       if (!response.ok) {
         let message = `Failed to create rule (status ${response.status})`;
         try {
@@ -540,10 +559,12 @@ const App = () => {
         }
         throw new Error(message);
       }
+
       setShowCreateModal(false);
       setCreateForm({ omschrijving: '', expressie: '', afdBrancheCode: '' });
       setXpathBuilder({ records: [createEmptyRecord()] });
       setBuilderError(null);
+
       setCurrentPage(1);
       fetchRules();
     } catch (err) {
@@ -556,18 +577,18 @@ const App = () => {
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
+
       <div className="max-w-6xl mx-auto p-6">
         <div className="rounded-2xl border border-brand-border brand-card">
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
-                  Acceptatieregels
-                </h1>
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">Acceptatieregels</h1>
                 <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">
                   Beheer van verzekering acceptatieregels
                 </p>
               </div>
+
               <div className="flex flex-col gap-2 md:flex-row md:items-center">
                 <input
                   type="text"
@@ -576,6 +597,7 @@ const App = () => {
                   placeholder="Zoek op Regel ID, Extern Nummer of Omschrijving (deelmatch)"
                   className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
+
                 <button
                   onClick={handleRefresh}
                   disabled={loading}
@@ -584,6 +606,7 @@ const App = () => {
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
+
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-xl transition-colors brand-primary"
@@ -598,9 +621,7 @@ const App = () => {
             <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3 dark:bg-yellow-900/30 dark:border-yellow-700/60">
               <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5 dark:text-yellow-400" />
               <div>
-                <p className="text-sm text-yellow-800 font-medium dark:text-yellow-200">
-                  Actie mislukt
-                </p>
+                <p className="text-sm text-yellow-800 font-medium dark:text-yellow-200">Actie mislukt</p>
                 <p className="text-xs text-yellow-700 mt-1 dark:text-yellow-200/80">{error}</p>
               </div>
             </div>
@@ -614,16 +635,17 @@ const App = () => {
             ) : (
               <table className="w-full table-fixed">
                 <colgroup>
-                  {/* 65% van oorspronkelijke breedte: 160px -> 104px, 220px -> 143px */}
                   <col style={{ width: '104px' }} />
                   <col style={{ width: '143px' }} />
                   <col />
                   <col style={{ width: '120px' }} />
                   <col style={{ width: '150px' }} />
                 </colgroup>
+
                 <thead className="bg-gray-50 border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                    {/* Kolomtitels 1 stap kleiner: text-xs */}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('regelId')}
@@ -636,7 +658,8 @@ const App = () => {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('externNummer')}
@@ -649,7 +672,8 @@ const App = () => {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => toggleSort('omschrijving')}
@@ -662,14 +686,17 @@ const App = () => {
                         </span>
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       DETAILS
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       AANPASSEN
                     </th>
                   </tr>
                 </thead>
+
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                   {currentRules.length === 0 ? (
                     <tr>
@@ -680,7 +707,6 @@ const App = () => {
                   ) : (
                     currentRules.map((rule) => (
                       <tr key={rule.regelId} className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800">
-                        {/* RegelID: zelfde kleur als andere kolommen (niet blauw), wel klikbaar */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-slate-200">
                           <button
                             onClick={() =>
@@ -693,15 +719,18 @@ const App = () => {
                             {rule.regelId}
                           </button>
                         </td>
+
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-200">
                           {rule.externNummer}
                         </td>
+
                         <td
                           className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200 truncate"
                           title={rule.omschrijving}
                         >
                           {rule.omschrijving}
                         </td>
+
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <button
                             onClick={() =>
@@ -715,6 +744,7 @@ const App = () => {
                             Details
                           </button>
                         </td>
+
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {rule.externNummer?.toString().toLowerCase().includes('tp') ? (
                             <div className="flex items-center gap-2">
@@ -726,6 +756,7 @@ const App = () => {
                               >
                                 <Pencil className="w-4 h-4" />
                               </button>
+
                               <button
                                 onClick={() => handleDelete(rule.regelId)}
                                 disabled={deletingId === rule.regelId}
@@ -750,12 +781,11 @@ const App = () => {
             )}
           </div>
 
+          {/* Footer: tekst aangepast naar alleen totaal */}
           {rules.length > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between dark:border-slate-700">
-              <div className="text-sm text-gray-700 dark:text-slate-200">
-                Toont {filteredRules.length === 0 ? 0 : indexOfFirstRule + 1} tot{' '}
-                {Math.min(indexOfLastRule, filteredRules.length)} van {filteredRules.length} regels
-              </div>
+              <div className="text-sm text-gray-700 dark:text-slate-200">Totaal {filteredRules.length} regels.</div>
+
               <div className="flex gap-2">
                 <button
                   onClick={() => handlePageChange(safePage - 1)}
@@ -808,6 +838,7 @@ const App = () => {
         </div>
       </div>
 
+      {/* Delete success modal */}
       {showDeleteSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-2xl border border-brand-border brand-modal">
@@ -836,6 +867,7 @@ const App = () => {
         </div>
       )}
 
+      {/* Create modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-brand-border brand-modal">
@@ -849,6 +881,7 @@ const App = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
+
             <form onSubmit={handleCreateSubmit} className="px-5 py-4 space-y-4 max-h-[75vh] overflow-y-auto">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="omschrijving">
@@ -891,6 +924,7 @@ const App = () => {
                       Bouw de expressie met rubrieken en voorwaarden en vul de Xpath Expressie in.
                     </p>
                   </div>
+
                   <button
                     type="button"
                     onClick={handleApplyBuilder}
@@ -936,6 +970,7 @@ const App = () => {
                       >
                         Check op rubriek:
                       </label>
+
                       <div className="flex items-center gap-2">
                         <input
                           id={`rubriek-${record.id}`}
@@ -945,6 +980,7 @@ const App = () => {
                           placeholder="Bijv. PG_456"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                         />
+
                         <div className="relative group">
                           <Info className="w-4 h-4 text-gray-400 dark:text-slate-400" aria-label="Info over rubriek" />
                           <div className="pointer-events-none absolute right-0 top-6 w-72 rounded-md bg-gray-900 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1016,7 +1052,9 @@ const App = () => {
                             id={`waarde-${condition.id}`}
                             type="text"
                             value={condition.value}
-                            onChange={(event) => handleConditionUpdate(record.id, condition.id, { value: event.target.value })}
+                            onChange={(event) =>
+                              handleConditionUpdate(record.id, condition.id, { value: event.target.value })
+                            }
                             placeholder="Bijv. 15"
                             className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                           />
@@ -1042,6 +1080,7 @@ const App = () => {
                       >
                         + Extra operatie op dezelfde rubriek
                       </button>
+
                       {xpathBuilder.records.length > 1 && (
                         <button
                           type="button"
@@ -1094,6 +1133,7 @@ const App = () => {
                 >
                   Annuleren
                 </button>
+
                 <button
                   type="submit"
                   disabled={createSubmitting}
@@ -1107,6 +1147,7 @@ const App = () => {
         </div>
       )}
 
+      {/* Edit modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-brand-border brand-modal">
@@ -1164,6 +1205,7 @@ const App = () => {
                 >
                   Annuleren
                 </button>
+
                 <button
                   type="submit"
                   disabled={editSubmitting}

@@ -5,6 +5,12 @@ import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { authFetch } from './apiAuth';
 
+// Zelfde knop-stijl als TopNav.jsx
+const baseBtn =
+  'px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200';
+const inactiveBtn = 'brand-outline hover:bg-red-50';
+const activeBtn = 'brand-primary text-white border-transparent shadow-sm';
+
 const App = () => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -238,9 +244,7 @@ const App = () => {
         try {
           const payload = await response.json();
           message = payload.message || payload.error || message;
-        } catch (_) {
-          // ignore json parse failure
-        }
+        } catch (_) {}
         throw new Error(message);
       }
 
@@ -549,15 +553,14 @@ const App = () => {
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
+
       <div className="max-w-6xl mx-auto p-6">
         <div className="rounded-2xl border border-brand-border brand-card">
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">Acceptatieregels</h1>
-                <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">
-                  Beheer van verzekering acceptatieregels
-                </p>
+                <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">Beheer van verzekering acceptatieregels</p>
               </div>
 
               <div className="flex flex-col gap-2 md:flex-row md:items-center">
@@ -569,19 +572,24 @@ const App = () => {
                   className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
 
-                {/* REFRESH: nu brand-primary */}
+                {/* Refresh: exact TopNav active style */}
                 <button
                   onClick={handleRefresh}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition brand-primary"
+                  className={[
+                    baseBtn,
+                    activeBtn,
+                    'flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed',
+                  ].join(' ')}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
 
+                {/* + Nieuwe regel: zelfde active style (was al brand-primary) */}
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-xl transition-colors brand-primary"
+                  className={[baseBtn, activeBtn, 'flex items-center justify-center gap-2'].join(' ')}
                 >
                   + Nieuwe regel
                 </button>
@@ -658,6 +666,7 @@ const App = () => {
                       </button>
                     </th>
 
+                    {/* Titles centred above contents */}
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       DETAILS
                     </th>
@@ -759,49 +768,61 @@ const App = () => {
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between dark:border-slate-700">
               <div className="text-sm text-gray-700 dark:text-slate-200">Totaal {filteredRules.length} regels.</div>
 
+              {/* Paginering: exact TopNav inactive/active styling */}
               <div className="flex gap-2">
                 <button
                   onClick={() => handlePageChange(safePage - 1)}
                   disabled={safePage === 1}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className={[
+                    baseBtn,
+                    inactiveBtn,
+                    'px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed',
+                  ].join(' ')}
+                  aria-label="Vorige pagina"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
 
                 {[...Array(totalPages)].map((_, index) => {
                   const pageNumber = index + 1;
+
                   if (
                     pageNumber === 1 ||
                     pageNumber === totalPages ||
                     (pageNumber >= safePage - 1 && pageNumber <= safePage + 1)
                   ) {
+                    const isActive = safePage === pageNumber;
                     return (
                       <button
                         key={pageNumber}
                         onClick={() => handlePageChange(pageNumber)}
-                        className={`px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${
-                          safePage === pageNumber
-                            ? 'text-white border-transparent brand-primary'
-                            : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'
-                        }`}
+                        className={[baseBtn, isActive ? activeBtn : inactiveBtn].join(' ')}
                       >
                         {pageNumber}
                       </button>
                     );
-                  } else if (pageNumber === safePage - 2 || pageNumber === safePage + 2) {
+                  }
+
+                  if (pageNumber === safePage - 2 || pageNumber === safePage + 2) {
                     return (
                       <span key={pageNumber} className="px-2 py-2 text-gray-500 dark:text-slate-400">
                         ...
                       </span>
                     );
                   }
+
                   return null;
                 })}
 
                 <button
                   onClick={() => handlePageChange(safePage + 1)}
                   disabled={safePage === totalPages}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className={[
+                    baseBtn,
+                    inactiveBtn,
+                    'px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed',
+                  ].join(' ')}
+                  aria-label="Volgende pagina"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -824,14 +845,9 @@ const App = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="px-4 py-5 text-sm text-gray-700 dark:text-slate-200">
-              Acceptatieregel succesvol verwijderd
-            </div>
+            <div className="px-4 py-5 text-sm text-gray-700 dark:text-slate-200">Acceptatieregel succesvol verwijderd</div>
             <div className="px-4 py-3 flex justify-end">
-              <button
-                onClick={() => setShowDeleteSuccess(false)}
-                className="px-3 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 rounded-md border border-brand-primary/20"
-              >
+              <button onClick={() => setShowDeleteSuccess(false)} className={[baseBtn, inactiveBtn].join(' ')}>
                 Sluiten
               </button>
             </div>
@@ -895,11 +911,12 @@ const App = () => {
                       Bouw de expressie met rubrieken en voorwaarden en vul de Xpath Expressie in.
                     </p>
                   </div>
+
                   <button
                     type="button"
                     onClick={handleApplyBuilder}
                     disabled={!buildXPathExpression(xpathBuilder.records)}
-                    className="px-3 py-2 text-xs font-medium text-white rounded-md disabled:opacity-60 disabled:cursor-not-allowed brand-primary"
+                    className={[baseBtn, activeBtn, 'text-xs px-3 py-2 disabled:opacity-60 disabled:cursor-not-allowed'].join(' ')}
                   >
                     Vul Xpath Expressie
                   </button>
@@ -912,14 +929,10 @@ const App = () => {
                   >
                     {recordIndex > 0 && (
                       <div className="flex flex-wrap items-center gap-2">
-                        <label
-                          className="text-xs font-medium text-gray-500 dark:text-slate-400"
-                          htmlFor={`record-joiner-${record.id}`}
-                        >
+                        <label className="text-xs font-medium text-gray-500 dark:text-slate-400">
                           Koppeling met vorige rubriek
                         </label>
                         <select
-                          id={`record-joiner-${record.id}`}
                           value={record.joiner}
                           onChange={(event) => handleRecordUpdate(record.id, { joiner: event.target.value })}
                           className="px-2 py-1 border border-gray-300 rounded-md text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
@@ -934,15 +947,11 @@ const App = () => {
                     )}
 
                     <div className="flex flex-col gap-2">
-                      <label
-                        className="text-xs font-medium text-gray-600 dark:text-slate-300"
-                        htmlFor={`rubriek-${record.id}`}
-                      >
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-300">
                         Check op rubriek:
                       </label>
                       <div className="flex items-center gap-2">
                         <input
-                          id={`rubriek-${record.id}`}
                           type="text"
                           value={record.rubriek}
                           onChange={(event) => handleRecordUpdate(record.id, { rubriek: event.target.value })}
@@ -1030,6 +1039,7 @@ const App = () => {
                       >
                         + Extra operatie op dezelfde rubriek
                       </button>
+
                       {xpathBuilder.records.length > 1 && (
                         <button
                           type="button"
@@ -1082,10 +1092,11 @@ const App = () => {
                 >
                   Annuleren
                 </button>
+
                 <button
                   type="submit"
                   disabled={createSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-60 disabled:cursor-not-allowed brand-primary"
+                  className={[baseBtn, activeBtn, 'px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed'].join(' ')}
                 >
                   Opslaan
                 </button>
@@ -1150,10 +1161,11 @@ const App = () => {
                 >
                   Annuleren
                 </button>
+
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-60 disabled:cursor-not-allowed brand-primary"
+                  className={[baseBtn, activeBtn, 'px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed'].join(' ')}
                 >
                   Opslaan
                 </button>

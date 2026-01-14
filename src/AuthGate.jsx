@@ -1,49 +1,124 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Lock } from 'lucide-react';
-import { getAuthCredentials, setAuthCredentials } from './apiAuth';
+import {
+  clearAuthError,
+  getAuthError,
+  getAuthHeader,
+  getAuthCredentials,
+  setAuthCredentials,
+} from './apiAuth';
+import { withApiEnv } from './apiEnv';
 
-// Simple UI gate: if no credentials are stored, hide the app and show a branded modal.
-// Note: This keeps using Basic Auth credentials stored in sessionStorage (current approach).
+/**
+ * AuthGate
+ *
+ * - Blokkeert de app totdat geldige Basic Auth credentials zijn ingevoerd
+ * - Toont een modal met gebruikersnaam + wachtwoord
+ * - Geeft een nette foutmelding bij onjuist wachtwoord (401)
+ * - Voorkomt "stil terugverspringen" naar home
+ *
+ * Let op:
+ * - Credentials worden alleen in sessionStorage opgeslagen
+ * - Backend (Python) blijft ongewijzigd
+ */
 
 const AuthGate = ({ children }) => {
   const [hasAuth, setHasAuth] = useState(Boolean(getAuthCredentials()));
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState(null);
+  const [checking, setChecking] = useState(false);
 
+  // Luister naar auth veranderingen (login / logout)
   useEffect(() => {
-    const onAuthChange = () => setHasAuth(Boolean(getAuthCredentials()));
+    const onAuthChange = () => {
+      setHasAuth(Boolean(getAuthCredentials()));
+    };
     window.addEventListener('authChange', onAuthChange);
     return () => window.removeEventListener('authChange', onAuthChange);
   }, []);
 
-  const canSubmit = useMemo(
-    () => user.trim().length > 0 && pass.length > 0,
-    [user, pass]
-  );
+  // Toon foutmelding als een API-call 401 teruggeeft
+  useEffect(() => {
+    const handleAuthError = () => {
+      const code = getAuthError();
+      if (code === 'unauthorized') {
+        setError('Onjuist gebruikersnaam of wachtwoord.');
+        clearAuthError();
+      }
+    };
 
-  const handleSubmit = (e) => {
+    handleAuthError();
+    window.addEventListener('authErrorChange', handleAuthError);
+    return () =>
+      window.removeEventListener('authErrorChange', handleAuthError);
+  }, []);
+
+  const canSubmit = useMemo(() => {
+    return user.trim().length > 0 && pass.length > 0 && !checking;
+  }, [user, pass, checking]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!canSubmit) {
+
+    const u = user.trim();
+    const p = pass;
+
+    if (!u || !p) {
       setError('Vul gebruikersnaam en wachtwoord in.');
       return;
     }
-    setAuthCredentials(user.trim(), pass);
-    setUser('');
-    setPass('');
+
+    setChecking(true);
+
+    try {
+      // 🔐 Check credentials één keer tegen een beveiligd endpoint
+      // Pas NA succesvolle check slaan we ze op
+      const testUrl = withApiEnv('/api/products');
+      const res = await fetch(testUrl, {
+        headers: {
+          ...getAuthHeader({ user: u, pass: p }),
+        },
+      });
+
+      if (res.status === 401) {
+        setError('Onjuist gebruikersnaam of wachtwoord.');
+        return;
+      }
+
+      if (!res.ok) {
+        setError('Inloggen lukt nu niet. Probeer het opnieuw.');
+        return;
+      }
+
+      // ✅ Succesvol: credentials opslaan
+      setAuthCredentials(u, p);
+      setUser('');
+      setPass('');
+    } catch (err) {
+      setError(
+        'Inloggen lukt nu niet. Controleer je internetverbinding en probeer het opnieuw.'
+      );
+    } finally {
+      setChecking(false);
+    }
   };
 
-  if (hasAuth) return children;
+  // Als we ingelogd zijn: app tonen
+  if (hasAuth) {
+    return children;
+  }
 
+  // Anders: login modal tonen
   return (
     <div className="min-h-screen brand-page">
-      {/* Hard-hide app until auth */}
+      {/* App blokkeren */}
       <div className="fixed inset-0 bg-white/40 backdrop-blur-sm" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <div className="brand-modal w-full max-w-md rounded-2xl p-6">
-          {/* Centered logo */}
+          {/* Logo */}
           <div className="flex justify-center mb-4">
             <img
               src="/logo.png"
@@ -52,7 +127,7 @@ const AuthGate = ({ children }) => {
             />
           </div>
 
-          {/* Header (left aligned) */}
+          {/* Header */}
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
               <Lock className="w-5 h-5 text-brand-primary" />
@@ -70,8 +145,11 @@ const AuthGate = ({ children }) => {
               <input
                 autoFocus
                 value={user}
-                onChange={(e) => setUser(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-brand-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
+                onChange={(e) => {
+                  setUser(e.target.value);
+                  if (error) setError(null);
+                }}
+                className="mt-1 w-full px-3 py-2 border border-brand-border rounded-xl text-brand-ink bg-white/70 focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
                 placeholder="Vul uw gebruikersnaam in"
               />
             </div>
@@ -83,28 +161,32 @@ const AuthGate = ({ children }) => {
               <input
                 type="password"
                 value={pass}
-                onChange={(e) => setPass(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-brand-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
+                onChange={(e) => {
+                  setPass(e.target.value);
+                  if (error) setError(null);
+                }}
+                className="mt-1 w-full px-3 py-2 border border-brand-border rounded-xl text-brand-ink bg-white/70 focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
                 placeholder="Vul uw wachtwoord in"
               />
             </div>
 
-            {error ? (
+            {error && (
               <div className="text-sm text-brand-primary">
                 {error}
               </div>
-            ) : null}
+            )}
 
             <button
               type="submit"
               disabled={!canSubmit}
-              className="w-full px-4 py-2.5 rounded-xl text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed brand-primary"
+              className="w-full px-4 py-2.5 rounded-xl text-white font-medium disabled:opacity-60 brand-primary"
             >
-              Doorgaan
+              {checking ? 'Controleren…' : 'Doorgaan'}
             </button>
 
             <p className="text-xs text-brand-muted">
-              Tip: deze gegevens worden alleen in je browser bewaard en verdwijnen bij het sluiten van de tab.
+              Deze gegevens worden alleen in je browser bewaard en verdwijnen
+              bij het sluiten van de tab.
             </p>
           </form>
         </div>

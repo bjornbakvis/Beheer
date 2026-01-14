@@ -34,10 +34,16 @@ def send_unauthorized(handler):
     """
     Belangrijk:
     - GEEN 'WWW-Authenticate' header zetten.
-    - Die header triggert de browser/Google login popup.
+      Die header triggert de browser/Google login popup.
+    - We zetten WEL een eigen header zodat de frontend weet:
+      dit is een Basic-Auth-401 (dus écht fout gebruikersnaam/wachtwoord).
     """
     handler.send_response(401)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Cache-Control", "no-store")
+
+    # ✅ Dit is de “label”: hiermee herkennen we “echte login fout”
+    handler.send_header("X-Auth-Reason", "basic")
+
     handler.end_headers()
     handler.wfile.write(b'{"error":"unauthorized"}')

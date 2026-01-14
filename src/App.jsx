@@ -687,11 +687,12 @@ const App = () => {
                       </button>
                     </th>
 
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                    {/* CENTREREN HEADER DETAILS/AANPASSEN */}
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       DETAILS
                     </th>
 
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       AANPASSEN
                     </th>
                   </tr>
@@ -731,47 +732,53 @@ const App = () => {
                           {rule.omschrijving}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={() =>
-                              navigate(`/rules/${rule.regelId}`, {
-                                state: { listState: { searchTerm, currentPage, sortKey, sortDir } },
-                              })
-                            }
-                            className="px-3 py-2 border rounded-xl transition-all duration-150 brand-outline"
-                            title="Toon details"
-                          >
-                            Details
-                          </button>
+                        {/* CENTREREN: DETAILS CEL */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                          <div className="w-full flex justify-center">
+                            <button
+                              onClick={() =>
+                                navigate(`/rules/${rule.regelId}`, {
+                                  state: { listState: { searchTerm, currentPage, sortKey, sortDir } },
+                                })
+                              }
+                              className="px-3 py-2 border rounded-xl transition-all duration-150 brand-outline"
+                              title="Toon details"
+                            >
+                              Details
+                            </button>
+                          </div>
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {rule.externNummer?.toString().toLowerCase().includes('tp') ? (
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
-                                className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                                title="Bewerk acceptatieregel"
-                                aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
+                        {/* CENTREREN: AANPASSEN CEL */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                          <div className="w-full flex justify-center">
+                            {rule.externNummer?.toString().toLowerCase().includes('tp') ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
+                                  className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                  title="Bewerk acceptatieregel"
+                                  aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
 
-                              <button
-                                onClick={() => handleDelete(rule.regelId)}
-                                disabled={deletingId === rule.regelId}
-                                className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
-                                title="Verwijder acceptatieregel"
-                                aria-label={`Verwijder acceptatieregel ${rule.regelId}`}
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">
-                              —
-                            </span>
-                          )}
+                                <button
+                                  onClick={() => handleDelete(rule.regelId)}
+                                  disabled={deletingId === rule.regelId}
+                                  className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
+                                  title="Verwijder acceptatieregel"
+                                  aria-label={`Verwijder acceptatieregel ${rule.regelId}`}
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">
+                                —
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

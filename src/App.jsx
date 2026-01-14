@@ -643,7 +643,7 @@ const App = () => {
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        EXTERN NUMMER{' '}
+                        EXT. NUMMER{' '}
                         <span className="inline-block w-4 text-right text-[1em] leading-none">
                           {sortKey === 'externNummer' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                         </span>

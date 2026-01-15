@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { RefreshCw, AlertCircle, Pencil, X } from 'lucide-react';
 import TopNav from './TopNav';
@@ -25,6 +25,10 @@ const ProductRules = () => {
   const [editExpressie, setEditExpressie] = useState('');
   const [editError, setEditError] = useState(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Alleen styling/UX van tabel: sorting zoals App.jsx
+  const [sortKey, setSortKey] = useState('validatieregelId'); // validatieregelId | aandResultaatAcceptatie | omschrijving
+  const [sortDir, setSortDir] = useState('asc'); // asc | desc
 
   const fetchRules = async () => {
     if (!productId) return;
@@ -167,6 +171,40 @@ const ProductRules = () => {
     }
   };
 
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  // Alleen UI: sorteren (default op ValidatieregelId)
+  const sortedRules = useMemo(() => {
+    const items = Array.isArray(rules) ? [...rules] : [];
+
+    const getVal = (r) => {
+      const id = r?.ValidatieregelId ?? r?.validatieregelId ?? '';
+      const aand = r?.AandResultaatAcceptatie ?? r?.aandResultaatAcceptatie ?? '';
+      const oms = r?.Omschrijving ?? r?.omschrijving ?? '';
+
+      if (sortKey === 'validatieregelId') return id;
+      if (sortKey === 'aandResultaatAcceptatie') return aand;
+      return oms;
+    };
+
+    items.sort((a, b) => {
+      const av = (getVal(a) ?? '').toString();
+      const bv = (getVal(b) ?? '').toString();
+
+      const cmp = av.localeCompare(bv, 'nl', { numeric: true, sensitivity: 'base' });
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return items;
+  }, [rules, sortKey, sortDir]);
+
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
@@ -223,53 +261,102 @@ const ProductRules = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
               </div>
             ) : (
-              <table className="w-full">
+              <table className="w-full table-fixed">
+                {/* zelfde “layout feel” als App.jsx */}
+                <colgroup>
+                  <col style={{ width: '150px' }} />
+                  <col style={{ width: '210px' }} />
+                  <col />
+                  <col style={{ width: '120px' }} />
+                  <col style={{ width: '150px' }} />
+                </colgroup>
+
                 <thead className="bg-gray-50 border-b border-gray-200 dark:bg-slate-800 dark:border-slate-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider dark:text-slate-200">
-                      ValidatieregelId
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('validatieregelId')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        VALIDATIEREGEL ID{' '}
+                        <span className="inline-block w-4 text-right text-[1em] leading-none">
+                          {sortKey === 'validatieregelId' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
+                      </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider dark:text-slate-200">
-                      AandResultaatAcceptatie
+
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('aandResultaatAcceptatie')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        AANDRESULTAATACCEPTATIE{' '}
+                        <span className="inline-block w-4 text-right text-[1em] leading-none">
+                          {sortKey === 'aandResultaatAcceptatie' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
+                      </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider dark:text-slate-200">
-                      Omschrijving
+
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('omschrijving')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        OMSCHRIJVING{' '}
+                        <span className="inline-block w-4 text-right text-[1em] leading-none">
+                          {sortKey === 'omschrijving' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
+                      </button>
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider dark:text-slate-200">
-                      Details
+
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                      DETAILS
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider dark:text-slate-200">
-                      Aanpassen
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
+                      AANPASSEN
                     </th>
                   </tr>
                 </thead>
 
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
-                  {rules.length === 0 ? (
+                  {sortedRules.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
+                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
                         Geen acceptatieregels gevonden
                       </td>
                     </tr>
                   ) : (
-                    rules.map((regel) => {
+                    sortedRules.map((regel) => {
                       const regelId = regel.ValidatieregelId || regel.validatieregelId;
 
                       // EXACT: alleen als AandHerkomstValidatieRegel === 'Tp'
                       const isTp = (regel.AandHerkomstValidatieRegel ?? '') === 'Tp';
 
+                      const omschrijving = regel.Omschrijving ?? regel.omschrijving ?? '-';
+                      const aand = regel.AandResultaatAcceptatie ?? regel.aandResultaatAcceptatie ?? '-';
+
                       return (
-                        <tr key={regelId} className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800/60">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
-                            {regelId ?? '-'}
+                        <tr key={regelId} className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-slate-200">
+                            {/* geen functionele wijziging: in ProductRules was dit geen link */}
+                            <span className="inline-block">{regelId ?? '-'}</span>
                           </td>
 
-                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
-                            {regel.AandResultaatAcceptatie ?? regel.aandResultaatAcceptatie ?? '-'}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-200">
+                            {aand}
                           </td>
 
-                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
-                            {regel.Omschrijving ?? regel.omschrijving ?? '-'}
+                          <td
+                            className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200 truncate"
+                            title={omschrijving}
+                          >
+                            {omschrijving}
                           </td>
 
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -277,12 +364,8 @@ const ProductRules = () => {
                               <button
                                 onClick={() => navigate(`/rules/${regelId}`)}
                                 disabled={!regelId}
-                                className={[
-                                  baseBtn,
-                                  inactiveBtn,
-                                  'inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed',
-                                ].join(' ')}
-                                title="Toon regel details"
+                                className="px-3 py-2 border rounded-xl transition-all duration-150 brand-outline disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Toon details"
                               >
                                 Details
                               </button>
@@ -411,7 +494,11 @@ const ProductRules = () => {
               )}
 
               <div className="flex items-center justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowEditModal(false)} className={[baseBtn, inactiveBtn].join(' ')}>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className={[baseBtn, inactiveBtn].join(' ')}
+                >
                   Annuleren
                 </button>
 

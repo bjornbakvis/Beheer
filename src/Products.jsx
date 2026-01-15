@@ -90,12 +90,12 @@ const Products = () => {
     <div className="min-h-screen brand-page">
       <TopNav />
       <div className="max-w-6xl mx-auto p-6">
-        <div className="rounded-2xl border border-brand-border brand-card">
-          <div className="p-6 border-b border-brand-border">
+        <div className="rounded-2xl border border-gray-200 brand-card">
+          <div className="p-6 border-b border-gray-200">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-brand-ink">Producten</h1>
-                <p className="text-sm text-brand-muted mt-1">
+                <h1 className="text-2xl font-semibold text-gray-900">Producten</h1>
+                <p className="text-sm text-gray-600 mt-1">
                   Overzicht van beschikbare verzekeringsproducten. Via de Bekijk knop zie je de gekoppelde Acceptatieregels.
                 </p>
               </div>
@@ -105,7 +105,7 @@ const Products = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Zoek op Product Id of Omschrijving"
-                  className="w-full md:w-64 px-3 py-2 border border-brand-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
+                  className="w-full md:w-64 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition"
                 />
                 <button
                   onClick={fetchProducts}
@@ -138,20 +138,20 @@ const Products = () => {
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-brand-surfaceMuted border-b border-brand-border">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Product Id
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Omschrijving
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Acceptatie regels
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-brand-border">
+                <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProducts.length === 0 ? (
                     <tr>
                       <td colSpan="3" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">

@@ -555,7 +555,7 @@ const App = () => {
       <TopNav />
 
       <div className="max-w-6xl mx-auto p-6">
-        <div className="rounded-2xl border border-brand-border brand-card">
+        <div className="rounded-2xl border border-gray-200 brand-card">
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
@@ -569,7 +569,7 @@ const App = () => {
                   value={searchTerm}
                   onChange={handleSearchChange}
                   placeholder="Zoek op Regel ID, Extern Nummer of Omschrijving (deelmatch)"
-                  className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
 
                 {/* Refresh: exact TopNav active style */}
@@ -834,7 +834,7 @@ const App = () => {
 
       {showDeleteSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-brand-border brand-modal">
+          <div className="w-full max-w-sm rounded-2xl border border-gray-200 brand-modal">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Melding</p>
               <button
@@ -857,7 +857,7 @@ const App = () => {
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-brand-border brand-modal">
+          <div className="w-full max-w-lg rounded-2xl border border-gray-200 brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Nieuwe acceptatieregel</p>
               <button
@@ -880,7 +880,7 @@ const App = () => {
                   maxLength={200}
                   value={createForm.omschrijving}
                   onChange={handleCreateInputChange('omschrijving')}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
 
@@ -893,7 +893,7 @@ const App = () => {
                   rows="4"
                   value={createForm.expressie}
                   onChange={handleCreateInputChange('expressie')}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
 
@@ -956,7 +956,7 @@ const App = () => {
                           value={record.rubriek}
                           onChange={(event) => handleRecordUpdate(record.id, { rubriek: event.target.value })}
                           placeholder="Bijv. PG_456"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                         />
                         <div className="relative group">
                           <Info className="w-4 h-4 text-gray-400 dark:text-slate-400" aria-label="Info over rubriek" />
@@ -1015,7 +1015,7 @@ const App = () => {
                               handleConditionUpdate(record.id, condition.id, { value: event.target.value })
                             }
                             placeholder="Bijv. 15"
-                            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                           />
                         </div>
 
@@ -1035,7 +1035,7 @@ const App = () => {
                       <button
                         type="button"
                         onClick={() => handleAddCondition(record.id)}
-                        className="text-xs font-medium text-brand-primary hover:opacity-90"
+                        className="text-xs font-medium text-red-600 hover:opacity-90"
                       >
                         + Extra operatie op dezelfde rubriek
                       </button>
@@ -1057,7 +1057,7 @@ const App = () => {
                   <button
                     type="button"
                     onClick={handleAddRecord}
-                    className="text-xs font-medium text-brand-primary hover:opacity-90"
+                    className="text-xs font-medium text-red-600 hover:opacity-90"
                   >
                     + Rubriek toevoegen
                   </button>
@@ -1074,7 +1074,7 @@ const App = () => {
                   type="number"
                   value={createForm.afdBrancheCode}
                   onChange={handleCreateInputChange('afdBrancheCode')}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
 
@@ -1108,7 +1108,7 @@ const App = () => {
 
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-brand-border brand-modal">
+          <div className="w-full max-w-lg rounded-2xl border border-gray-200 brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Bewerk acceptatieregel {editRuleId}</p>
               <button
@@ -1130,7 +1130,7 @@ const App = () => {
                   type="text"
                   value={editOmschrijving}
                   onChange={(event) => setEditOmschrijving(event.target.value)}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
 
@@ -1143,7 +1143,7 @@ const App = () => {
                   rows="5"
                   value={editExpressie}
                   onChange={(event) => setEditExpressie(event.target.value)}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
 

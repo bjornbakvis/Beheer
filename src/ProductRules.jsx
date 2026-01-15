@@ -5,11 +5,11 @@ import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { authFetch } from './apiAuth';
 
-// Consistente knop-stijl (zelfde als App.jsx / TopNav.jsx)
+// Zelfde knop-stijl als TopNav.jsx / App.jsx
 const baseBtn =
   'px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200';
-const outlineBtn = 'brand-outline hover:bg-red-50';
-const primaryBtn = 'brand-primary text-white border-transparent shadow-sm';
+const inactiveBtn = 'brand-outline hover:bg-red-50';
+const activeBtn = 'brand-primary text-white border-transparent shadow-sm';
 
 const ProductRules = () => {
   const { productId } = useParams();
@@ -175,7 +175,7 @@ const ProductRules = () => {
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => navigate(-1)}
-            className={[baseBtn, outlineBtn, 'inline-flex items-center gap-2'].join(' ')}
+            className={[baseBtn, inactiveBtn, 'inline-flex items-center gap-2'].join(' ')}
           >
             ← Terug
           </button>
@@ -194,9 +194,8 @@ const ProductRules = () => {
               disabled={loading}
               className={[
                 baseBtn,
-                primaryBtn,
-                'inline-flex items-center justify-center gap-2',
-                loading ? 'opacity-60 cursor-not-allowed' : '',
+                activeBtn,
+                'inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed',
               ].join(' ')}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -206,12 +205,12 @@ const ProductRules = () => {
 
           {error && (
             <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3 dark:bg-yellow-900/30 dark:border-yellow-700/60">
-              <AlertCircle className="w-5 h-5 text-yellow-700 flex-shrink-0 mt-0.5 dark:text-yellow-300" />
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5 dark:text-yellow-400" />
               <div>
                 <p className="text-sm text-yellow-800 font-medium dark:text-yellow-200">
                   Kon acceptatieregels niet laden
                 </p>
-                <p className="text-xs text-yellow-700 mt-1 dark:text-yellow-200/90">
+                <p className="text-xs text-yellow-700 mt-1 dark:text-yellow-200/80">
                   {error}
                 </p>
               </div>
@@ -285,11 +284,8 @@ const ProductRules = () => {
                             disabled={!(regel.ValidatieregelId || regel.validatieregelId)}
                             className={[
                               baseBtn,
-                              outlineBtn,
-                              'inline-flex items-center gap-2',
-                              !(regel.ValidatieregelId || regel.validatieregelId)
-                                ? 'opacity-50 cursor-not-allowed'
-                                : '',
+                              inactiveBtn,
+                              'inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed',
                             ].join(' ')}
                             title="Toon regel details"
                           >
@@ -299,6 +295,7 @@ const ProductRules = () => {
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex items-center gap-2">
+                            {/* Icoon-knoppen: exact dezelfde stijl als in App.jsx */}
                             <button
                               onClick={() =>
                                 openEditModal(
@@ -307,11 +304,7 @@ const ProductRules = () => {
                                   regel.Expressie || regel.expressie || ''
                                 )
                               }
-                              className={[
-                                baseBtn,
-                                outlineBtn,
-                                'p-2 inline-flex items-center justify-center',
-                              ].join(' ')}
+                              className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                               title="Bewerk acceptatieregel"
                               aria-label={`Bewerk acceptatieregel ${
                                 regel.ValidatieregelId || regel.validatieregelId
@@ -327,16 +320,7 @@ const ProductRules = () => {
                               disabled={
                                 deletingId === (regel.ValidatieregelId || regel.validatieregelId)
                               }
-                              className={[
-                                baseBtn,
-                                'p-2 inline-flex items-center justify-center rounded-xl',
-                                'border-red-200 text-red-700 hover:bg-red-50',
-                                'focus:ring-red-200',
-                                deletingId === (regel.ValidatieregelId || regel.validatieregelId)
-                                  ? 'opacity-50 cursor-not-allowed'
-                                  : '',
-                                'dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-900/20',
-                              ].join(' ')}
+                              className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
                               title="Verwijder acceptatieregel"
                               aria-label={`Verwijder acceptatieregel ${
                                 regel.ValidatieregelId || regel.validatieregelId
@@ -358,28 +342,26 @@ const ProductRules = () => {
 
       {showDeleteSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm rounded-2xl brand-modal border border-gray-200 dark:border-slate-700">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
                 Melding
               </p>
               <button
                 onClick={() => setShowDeleteSuccess(false)}
-                className={[baseBtn, outlineBtn, 'p-2 inline-flex items-center justify-center'].join(' ')}
+                className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"
                 aria-label="Sluit melding"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-
             <div className="px-4 py-5 text-sm text-gray-700 dark:text-slate-200">
               Acceptatieregel succesvol verwijderd
             </div>
-
             <div className="px-4 py-3 flex justify-end">
               <button
                 onClick={() => setShowDeleteSuccess(false)}
-                className={[baseBtn, outlineBtn].join(' ')}
+                className={[baseBtn, inactiveBtn].join(' ')}
               >
                 Sluiten
               </button>
@@ -390,20 +372,19 @@ const ProductRules = () => {
 
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl brand-modal border border-gray-200 dark:border-slate-700">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 neon-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
                 Bewerk acceptatieregel {editRuleId}
               </p>
               <button
                 onClick={() => setShowEditModal(false)}
-                className={[baseBtn, outlineBtn, 'p-2 inline-flex items-center justify-center'].join(' ')}
+                className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"
                 aria-label="Sluit formulier"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-
             <form onSubmit={handleEditSubmit} className="px-5 py-4 space-y-4">
               <div>
                 <label
@@ -417,10 +398,9 @@ const ProductRules = () => {
                   type="text"
                   value={editOmschrijving}
                   onChange={(event) => setEditOmschrijving(event.target.value)}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
-
               <div>
                 <label
                   className="text-sm font-medium text-gray-700 dark:text-slate-200"
@@ -433,33 +413,29 @@ const ProductRules = () => {
                   rows="5"
                   value={editExpressie}
                   onChange={(event) => setEditExpressie(event.target.value)}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
-
               {editError && (
                 <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2 dark:bg-red-900/30 dark:border-red-700/60 dark:text-red-300">
                   {editError}
                 </div>
               )}
-
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className={[baseBtn, outlineBtn].join(' ')}
+                  className={[baseBtn, inactiveBtn].join(' ')}
                 >
                   Annuleren
                 </button>
-
                 <button
                   type="submit"
                   disabled={editSubmitting}
                   className={[
                     baseBtn,
-                    primaryBtn,
-                    editSubmitting ? 'opacity-60 cursor-not-allowed' : '',
-                    'px-4',
+                    activeBtn,
+                    'px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed',
                   ].join(' ')}
                 >
                   Opslaan

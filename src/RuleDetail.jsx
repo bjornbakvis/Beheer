@@ -1,198 +1,185 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Info, Save, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
+import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
-import { authFetch } from './apiAuth';
-
-// Consistente knop-stijl (zelfde als App.jsx / TopNav.jsx)
-const baseBtn =
-  'px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200';
-const inactiveBtn = 'brand-outline hover:bg-red-50';
-const activeBtn = 'brand-primary text-white border-transparent shadow-sm';
+import { getAuthHeader } from './apiAuth';
 
 const RuleDetail = () => {
-  const navigate = useNavigate();
   const { regelId } = useParams();
+  const navigate = useNavigate();
   const location = useLocation();
-  const productCode = location.state?.productCode;
-
-  const isEdit = useMemo(
-    () => new URLSearchParams(location.search).get('edit') === '1',
-    [location.search]
-  );
-
-  const [rule, setRule] = useState(null);
+  const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-
-  const fetchRule = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await authFetch(
-        `/api/explain-rule?regelId=${encodeURIComponent(regelId)}`
-      );
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setRule(data);
-    } catch (e) {
-      setError(String(e.message || e));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [explainError, setExplainError] = useState(null);
 
   useEffect(() => {
-    fetchRule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const fetchDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(
+          `/api/acceptance-rules?regelId=${encodeURIComponent(regelId)}`,
+          {
+            headers: {
+              'Cache-Control': 'no-store',
+              ...getAuthHeader(),
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setDetail(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetail();
   }, [regelId]);
 
-  const save = async () => {
-    setSaving(true);
-    setError(null);
+  const explainRule = async () => {
+    setExplainLoading(true);
+    setExplainError(null);
+
     try {
-      const res = await authFetch('/api/acceptance-rules', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rule),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      navigate(-1);
-    } catch (e) {
-      setError(String(e.message || e));
+      const response = await fetch(
+        `/api/explain-rule?regelId=${encodeURIComponent(regelId)}`,
+        {
+          headers: {
+            'Cache-Control': 'no-store',
+            ...getAuthHeader(),
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP error! status: ${response.status}`);
+      }
+
+      const explanation = await response.text();
+      setDetail((prev) => ({ ...prev, Explanation: explanation }));
+    } catch (err) {
+      setExplainError(err.message);
     } finally {
-      setSaving(false);
+      setExplainLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen brand-page">
+      <TopNav />
+
       <div className="max-w-6xl mx-auto p-6">
-        <div className="rounded-2xl brand-card">
-          <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
-                Regel {regelId}
-              </h1>
-              {productCode && (
-                <p className="text-sm text-gray-600 dark:text-slate-300">
-                  Product: {productCode}
-                </p>
-              )}
+        <div className="mb-6">
+          <button
+            onClick={() => {
+              const listState = location.state?.listState;
+              if (listState) {
+                navigate('/', { state: { listState } });
+              } else {
+                navigate(-1);
+              }
+            }}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200 brand-outline hover:bg-red-50 dark:text-slate-200"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Terug
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 dark:bg-slate-900 dark:border-slate-700 neon-card">
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className={[baseBtn, inactiveBtn, 'inline-flex items-center gap-2'].join(' ')}
-              >
-                <ChevronLeft size={16} />
-                Terug
-              </button>
-
-              {isEdit && (
-                <button
-                  type="button"
-                  onClick={save}
-                  disabled={saving}
-                  className={[
-                    baseBtn,
-                    activeBtn,
-                    'inline-flex items-center gap-2',
-                    saving ? 'opacity-60 cursor-not-allowed' : '',
-                  ].join(' ')}
-                >
-                  <Save size={16} />
-                  Opslaan
-                </button>
-              )}
+          ) : error ? (
+            <div className="flex items-start gap-3 text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-md p-4 dark:bg-yellow-900/30 dark:border-yellow-700/60 dark:text-yellow-200">
+              <AlertCircle className="w-5 h-5 mt-0.5" />
+              <div>
+                <h3 className="font-medium">Fout bij laden van details</h3>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
             </div>
-          </div>
-
-          <div className="p-6">
-            {error && (
-              <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-700 border border-red-200">
-                {error}
+          ) : detail ? (
+            <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              <div>
+                <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Regel ID</dt>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-slate-100">{detail.RegelID}</dd>
               </div>
-            )}
 
-            {loading ? (
-              <div className="text-sm text-gray-600 dark:text-slate-300">
-                Laden...
+              <div>
+                <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Extern nummer</dt>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-slate-100">{detail.Externnummer}</dd>
               </div>
-            ) : !rule ? (
-              <div className="text-sm text-gray-600 dark:text-slate-300">
-                Geen regel gevonden.
+
+              <div className="md:col-span-2">
+                <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Omschrijving</dt>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-slate-100">{detail.Omschrijving}</dd>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="p-4 rounded-2xl border border-gray-200 bg-white/80 dark:bg-slate-900/60 dark:border-slate-700">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Info size={16} className="text-gray-500 dark:text-slate-400" />
-                    <h2 className="font-semibold text-gray-900 dark:text-slate-100">
-                      Details
-                    </h2>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="text-xs text-gray-600 dark:text-slate-300">
-                        Externnummer
-                      </div>
-                      <div className="text-gray-900 dark:text-slate-100">
-                        {rule.Externnummer}
-                      </div>
-                    </div>
+              <div className="md:col-span-2">
+                <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Expressie</dt>
+                <dd className="mt-1 text-sm font-mono bg-gray-50 p-4 rounded-md overflow-x-auto dark:bg-slate-800 dark:text-slate-100">
+                  {detail.Expressie}
+                </dd>
+              </div>
 
-                    <div>
-                      <div className="text-xs text-gray-600 dark:text-slate-300">
-                        Omschrijving
-                      </div>
-                      <div className="text-gray-900 dark:text-slate-100">
-                        {rule.Omschrijving}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="md:col-span-2">
+                <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Schema</dt>
+                <dd className="mt-1 text-sm font-mono bg-gray-50 p-4 rounded-md overflow-x-auto dark:bg-slate-800 dark:text-slate-100">
+                  {JSON.stringify(detail.Schema, null, 2)}
+                </dd>
+              </div>
 
-                {isEdit && (
-                  <div className="p-4 rounded-2xl border border-gray-200 bg-white/80 dark:bg-slate-900/60 dark:border-slate-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="font-semibold text-gray-900 dark:text-slate-100">
-                        Bewerken (JSON)
-                      </h2>
+              <div className="md:col-span-2">
+                <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Uitleg</dt>
+                <dd className="mt-1">
+                  {detail.Explanation ? (
+                    <pre className="text-sm font-mono bg-gray-50 p-4 rounded-md overflow-x-auto dark:bg-slate-800 dark:text-slate-100">
+                      {detail.Explanation}
+                    </pre>
+                  ) : (
+                    <div className="flex flex-col gap-2">
                       <button
-                        type="button"
-                        onClick={() => navigate(-1)}
-                        className={[baseBtn, inactiveBtn, 'inline-flex items-center gap-2'].join(' ')}
+                        onClick={explainRule}
+                        disabled={explainLoading}
+                        className="w-fit px-3 py-2 rounded-md border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                       >
-                        <X size={16} />
-                        Annuleer
+                        {explainLoading ? 'Bezig...' : 'Genereer uitleg'}
                       </button>
-                    </div>
 
-                    <textarea
-                      value={JSON.stringify(rule, null, 2)}
-                      onChange={(e) => {
-                        try {
-                          setRule(JSON.parse(e.target.value));
-                        } catch {
-                          // negeer parse errors tijdens typen
-                        }
-                      }}
-                      className="w-full h-96 p-3 border border-gray-300 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                    />
-                  </div>
-                )}
+                      {explainError && (
+                        <div className="flex items-start gap-3 text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-md p-4 dark:bg-yellow-900/30 dark:border-yellow-700/60 dark:text-yellow-200">
+                          <AlertCircle className="w-5 h-5 mt-0.5" />
+                          <div>
+                            <h3 className="font-medium">Fout bij uitleg genereren</h3>
+                            <p className="text-sm mt-1">{explainError}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </dd>
               </div>
-            )}
-          </div>
+            </dl>
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-slate-300">Geen details gevonden.</p>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default withApiEnv(RuleDetail);
+export default RuleDetail;

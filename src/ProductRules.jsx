@@ -188,7 +188,7 @@ const ProductRules = () => {
         <div className="rounded-2xl border border-gray-200 brand-card dark:border-slate-700">
           <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
             <p className="text-sm text-gray-600 dark:text-slate-300">
-              Overzicht van validatieregels uit de productdefinitie
+              Overzicht van de acceptatieregels uit deze productdefinitie
             </p>
 
             <button

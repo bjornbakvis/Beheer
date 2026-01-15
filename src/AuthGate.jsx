@@ -108,35 +108,35 @@ const AuthGate = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-brand-surfaceMuted border border-brand-border flex items-center justify-center">
-              <Lock className="w-5 h-5 text-brand-primary" />
+            <div className="h-11 w-11 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center">
+              <Lock className="w-5 h-5 text-red-600" />
             </div>
-            <h2 className="text-lg font-semibold text-brand-ink">Inloggen</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Inloggen</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-brand-muted">
+              <label className="block text-xs font-medium text-gray-600">
                 Gebruikersnaam
               </label>
               <input
                 autoFocus
                 value={user}
                 onChange={(e) => setUser(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-brand-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
+                className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition"
                 placeholder="Vul uw gebruikersnaam in"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-brand-muted">
+              <label className="block text-xs font-medium text-gray-600">
                 Wachtwoord
               </label>
               <input
                 type="password"
                 value={pass}
                 onChange={(e) => setPass(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-brand-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition"
+                className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition"
                 placeholder="Vul uw wachtwoord in"
               />
             </div>
@@ -153,7 +153,7 @@ const AuthGate = ({ children }) => {
               {checking ? 'Controleren...' : 'Doorgaan'}
             </button>
 
-            <p className="text-xs text-brand-muted">
+            <p className="text-xs text-gray-600">
               Tip: deze gegevens worden alleen in je browser bewaard en verdwijnen bij het sluiten van de tab.
             </p>
           </form>

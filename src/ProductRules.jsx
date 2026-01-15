@@ -280,7 +280,7 @@ const ProductRules = () => {
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        VALIDATIEREGEL ID{' '}
+                        REGEL ID{' '}
                         <span className="inline-block w-4 text-right text-[1em] leading-none">
                           {sortKey === 'validatieregelId' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                         </span>
@@ -294,7 +294,7 @@ const ProductRules = () => {
                         className="inline-flex items-center gap-2 hover:opacity-80 select-none"
                         title="Klik om te sorteren"
                       >
-                        AANDRESULTAATACCEPTATIE{' '}
+                        RESULTAAT{' '}
                         <span className="inline-block w-4 text-right text-[1em] leading-none">
                           {sortKey === 'aandResultaatAcceptatie' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                         </span>

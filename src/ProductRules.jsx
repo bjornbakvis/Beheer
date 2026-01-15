@@ -167,18 +167,18 @@ const ProductRules = () => {
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-brand-border text-brand-ink hover:bg-brand-surfaceMuted transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-gray-900 hover:bg-gray-50 transition-colors"
           >
             ← Terug
           </button>
-          <h1 className="text-2xl font-semibold text-brand-ink">
+          <h1 className="text-2xl font-semibold text-gray-900">
             Acceptatieregels voor product {productId}
           </h1>
         </div>
 
-        <div className="rounded-2xl border border-brand-border brand-card">
-          <div className="p-6 border-b border-brand-border flex items-center justify-between">
-            <p className="text-sm text-brand-muted">
+        <div className="rounded-2xl border border-gray-200 brand-card">
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+            <p className="text-sm text-gray-600">
               Overzicht van validatieregels uit de productdefinitie
             </p>
             <button
@@ -208,26 +208,26 @@ const ProductRules = () => {
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-brand-surfaceMuted border-b border-brand-border">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       ValidatieregelId
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       AandResultaatAcceptatie
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Omschrijving
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Details
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-brand-muted uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Aanpassen
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-brand-border">
+                <tbody className="bg-white divide-y divide-gray-200">
                   {rules.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">

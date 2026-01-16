@@ -538,6 +538,12 @@ const Dynamiekregels = () => {
     }
   };
 
+  // Alleen aanpassen mogelijk als RegelId >= 10000
+  const canEditRule = (rule) => {
+    const n = Number.parseInt((rule?.regelId ?? '').toString(), 10);
+    return Number.isFinite(n) && n >= 10000;
+  };
+
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
@@ -694,7 +700,7 @@ const Dynamiekregels = () => {
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           <div className="w-full flex justify-center">
-                            {rule.externNummer?.toString().toLowerCase().includes('tp') ? (
+                            {canEditRule(rule) ? (
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
@@ -716,7 +722,7 @@ const Dynamiekregels = () => {
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-400" title="Alleen TP-regels zijn aanpasbaar">
+                              <span className="text-xs text-gray-400" title="Alleen regels met Regel ID vanaf 10000 zijn aanpasbaar">
                                 —
                               </span>
                             )}

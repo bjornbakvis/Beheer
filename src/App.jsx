@@ -568,7 +568,7 @@ const App = () => {
                   type="text"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  placeholder="Zoek op Regel ID, Extern Nummer of Omschrijving (deelmatch)"
+                  placeholder="Zoek op Regel ID, Extern Nummer of Omschrijving"
                   className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
 

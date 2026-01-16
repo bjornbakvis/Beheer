@@ -5,6 +5,12 @@ import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { getAuthHeader } from './apiAuth';
 
+// Zelfde knop-stijl als App.jsx / Dynamiekregels.jsx / TopNav.jsx
+const baseBtn =
+  'px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200';
+const inactiveBtn = 'brand-outline hover:bg-red-50';
+const activeBtn = 'brand-primary text-white border-transparent shadow-sm';
+
 const formatValue = (value) => {
   if (value === null || value === undefined || value === '') return '—';
   if (typeof value === 'boolean') return value ? 'true' : 'false';
@@ -12,16 +18,17 @@ const formatValue = (value) => {
 };
 
 const Row = ({ label, value }) => (
-  <div className="flex gap-4">
-    <div className="w-56 font-medium text-gray-900">{label}</div>
-    <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
+  <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-1 sm:gap-4">
+    <div className="text-gray-700 font-medium dark:text-slate-200">{label}</div>
+    <div className="text-gray-900 break-words dark:text-slate-50">{formatValue(value)}</div>
   </div>
 );
 
+// Voor subsecties waar labels expliciet niet vet moeten zijn (Bron/Doel/Operator/Waarde)
 const RowLight = ({ label, value }) => (
-  <div className="flex gap-4">
-    <div className="w-56 text-gray-900">{label}</div>
-    <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
+  <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-1 sm:gap-4">
+    <div className="text-gray-700 dark:text-slate-200">{label}</div>
+    <div className="text-gray-900 break-words dark:text-slate-50">{formatValue(value)}</div>
   </div>
 );
 
@@ -40,13 +47,10 @@ const DynamiekregelDetail = () => {
     setError(null);
 
     try {
-      const res = await fetch(
-        withApiEnv(`/api/dynamiekregels?regelId=${encodeURIComponent(regelId)}`),
-        {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-store', ...getAuthHeader() },
-        }
-      );
+      const res = await fetch(withApiEnv(`/api/dynamiekregels?regelId=${encodeURIComponent(regelId)}`), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-store', ...getAuthHeader() },
+      });
 
       if (!res.ok) {
         throw new Error(`Failed to fetch details (status ${res.status})`);
@@ -108,15 +112,13 @@ const DynamiekregelDetail = () => {
                   navigate(-1);
                 }
               }}
-              className="px-3 py-2 rounded-xl text-sm font-medium border brand-outline hover:bg-red-50 flex items-center gap-2"
+              className={[baseBtn, inactiveBtn, 'flex items-center gap-2'].join(' ')}
             >
               <ArrowLeft className="w-4 h-4" />
               Terug
             </button>
 
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Dynamiekregel {regelId}
-            </h1>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">Dynamiekregel {regelId}</h1>
           </div>
 
           {/* Right aligned buttons */}
@@ -124,16 +126,17 @@ const DynamiekregelDetail = () => {
             <button
               onClick={fetchDetail}
               disabled={loading}
-              className="px-3 py-2 rounded-xl text-sm font-medium border brand-outline hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+              className={[
+                baseBtn,
+                activeBtn,
+                'flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed',
+              ].join(' ')}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
 
-            <button
-              onClick={() => setShowJsonModal(true)}
-              className="px-3 py-2 rounded-xl text-sm font-medium border brand-outline hover:bg-red-50"
-            >
+            <button onClick={() => setShowJsonModal(true)} className={[baseBtn, activeBtn].join(' ')}>
               Volledige JSON
             </button>
           </div>
@@ -145,40 +148,43 @@ const DynamiekregelDetail = () => {
               <div className="animate-spin h-8 w-8 border-b-2 border-red-600 rounded-full" />
             </div>
           ) : error ? (
-            <div className="flex gap-3 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-              <AlertCircle className="w-5 h-5" />
+            <div className="flex gap-3 bg-yellow-50 border border-yellow-200 p-4 rounded-lg dark:bg-yellow-900/30 dark:border-yellow-700/60">
+              <AlertCircle className="w-5 h-5 text-yellow-700 dark:text-yellow-300" />
               <div>
-                <p className="text-sm font-medium">Kon details niet laden</p>
-                <p className="text-xs">{error}</p>
+                <p className="text-sm font-medium text-yellow-900 dark:text-yellow-200">Kon details niet laden</p>
+                <p className="text-xs text-yellow-800 dark:text-yellow-200/80">{error}</p>
               </div>
             </div>
           ) : !vm ? (
-            <p className="text-sm text-gray-600">Geen details gevonden.</p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">Geen details gevonden.</p>
           ) : (
             <div className="space-y-6">
               <div>
-                <div className="text-sm text-gray-500">Omschrijving</div>
-                <div className="text-lg text-gray-900">{vm.omschrijving}</div>
+                <div className="text-sm text-gray-500 dark:text-slate-300">Omschrijving</div>
+                <div className="text-lg text-gray-900 dark:text-slate-100">{vm.omschrijving}</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-500">Inhoud</div>
+                <div className="text-sm text-gray-500 dark:text-slate-300">Inhoud</div>
 
-                <div className="mt-2 space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <Row label="AFD-branchecode" value={vm.afdBranchecode} />
-                  <Row label="Herkomst" value={vm.herkomst} />
+                {/* 1 punt kleiner + nettere, meer consistente kaart-styling */}
+                <div className="mt-2 space-y-5 rounded-xl border border-gray-200 bg-gray-50/70 p-5 text-sm dark:border-slate-700 dark:bg-slate-800/40">
+                  <div className="space-y-3">
+                    <Row label="AFD-branchecode" value={vm.afdBranchecode} />
+                    <Row label="Herkomst" value={vm.herkomst} />
+                  </div>
 
                   <div>
-                    <div className="font-medium text-gray-900">Bron</div>
-                    <div className="mt-2 ml-6 space-y-3">
+                    <div className="font-medium text-gray-900 dark:text-slate-100">Bron</div>
+                    <div className="mt-2 ml-0 sm:ml-6 space-y-3">
                       <RowLight label="Entiteitcode" value={vm.bronEntiteit} />
                       <RowLight label="AFD-dekkingcode" value={vm.bronAfdDekking} />
                       <RowLight label="Attribuutcode" value={vm.bronAttribuut} />
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-gray-200">
-                    <div className="font-medium text-gray-900">Rekenregels</div>
+                  <div className="pt-5 border-t border-gray-200 dark:border-slate-700">
+                    <div className="font-medium text-gray-900 dark:text-slate-100">Rekenregels</div>
 
                     <div className="mt-3 space-y-3">
                       {vm.rekenregels.map((rr, idx) => {
@@ -186,25 +192,20 @@ const DynamiekregelDetail = () => {
                         return (
                           <div
                             key={idx}
-                            className="rounded-lg border border-gray-200 bg-white/70 p-4 space-y-3"
+                            className="rounded-xl border border-gray-200 bg-white/70 p-5 space-y-4 dark:border-slate-700 dark:bg-slate-900/30"
                           >
-                            <div className="font-medium text-gray-900">
-                              Rekenregel {idx + 1}
-                            </div>
+                            <div className="font-medium text-gray-900 dark:text-slate-100">Rekenregel {idx + 1}</div>
 
-                            <div className="ml-6 space-y-3">
+                            <div className="ml-0 sm:ml-6 space-y-3">
                               <RowLight label="Operator" value={rr.Operator} />
                               <RowLight label="Waarde" value={rr.Waarde} />
                             </div>
 
-                            <div className="pt-3 border-t border-gray-200">
-                              <div className="font-medium text-gray-900">Doel</div>
-                              <div className="mt-2 ml-6 space-y-3">
+                            <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
+                              <div className="font-medium text-gray-900 dark:text-slate-100">Doel</div>
+                              <div className="mt-2 ml-0 sm:ml-6 space-y-3">
                                 <RowLight label="Entiteitcode" value={doel.EntiteitcodeId} />
-                                <RowLight
-                                  label="AFD-dekkingcode"
-                                  value={doel.AfdDekingcode ?? doel.AfdDekkingcode}
-                                />
+                                <RowLight label="AFD-dekkingcode" value={doel.AfdDekingcode ?? doel.AfdDekkingcode} />
                                 <RowLight label="Attribuutcode" value={doel.AttribuutcodeId} />
                               </div>
                             </div>
@@ -214,7 +215,7 @@ const DynamiekregelDetail = () => {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-gray-200">
+                  <div className="pt-5 border-t border-gray-200 dark:border-slate-700">
                     <Row label="Gevolg" value={vm.gevolg} />
                   </div>
                 </div>
@@ -236,25 +237,19 @@ const DynamiekregelDetail = () => {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <p className="text-sm font-medium text-gray-900">Volledige JSON</p>
-              <button
-                onClick={() => setShowJsonModal(false)}
-                className="p-1 rounded-md hover:bg-gray-100"
-              >
+              <button onClick={() => setShowJsonModal(false)} className="p-1 rounded-md hover:bg-gray-100">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
-              <pre className="text-sm whitespace-pre-wrap break-words text-gray-900">
+              <pre className="text-sm font-sans whitespace-pre-wrap break-words text-gray-900">
                 {JSON.stringify(detail, null, 2)}
               </pre>
             </div>
 
             <div className="px-5 py-4 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={() => setShowJsonModal(false)}
-                className="px-3 py-2 rounded-xl text-sm font-medium border brand-outline hover:bg-red-50"
-              >
+              <button onClick={() => setShowJsonModal(false)} className={[baseBtn, inactiveBtn].join(' ')}>
                 Sluiten
               </button>
             </div>

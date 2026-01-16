@@ -219,27 +219,32 @@ const DynamiekregelDetail = () => {
                       {vm.rekenregels.map((rr, idx) => {
                         const doel = rr.Doel || {};
                         return (
+                          // Full-bleed card binnen de Inhoud padding, zodat kolommen exact gelijk starten als Bron
                           <div
                             key={idx}
-                            className="rounded-lg border border-gray-200 bg-white/70 p-4 space-y-3"
+                            className="-mx-4 rounded-lg border border-gray-200 bg-white/70"
                           >
-                            <div className="font-medium text-gray-900">Rekenregel {idx + 1}</div>
+                            <div className="p-4 space-y-3">
+                              <div className="font-medium text-gray-900">Rekenregel {idx + 1}</div>
 
-                            <div className="space-y-3">
-                              <RowLight indent label="Operator" value={rr.Operator} />
-                              <RowLight indent label="Waarde" value={rr.Waarde} />
+                              <div className="space-y-3">
+                                <RowLight indent label="Operator" value={rr.Operator} />
+                                <RowLight indent label="Waarde" value={rr.Waarde} />
+                              </div>
                             </div>
 
-                            <div className="pt-3 border-t border-gray-200">
-                              <div className="font-medium text-gray-900">Doel</div>
-                              <div className="mt-2 space-y-3">
-                                <RowLight indent label="Entiteitcode" value={doel.EntiteitcodeId} />
-                                <RowLight
-                                  indent
-                                  label="AFD-dekkingcode"
-                                  value={doel.AfdDekingcode ?? doel.AfdDekkingcode}
-                                />
-                                <RowLight indent label="Attribuutcode" value={doel.AttribuutcodeId} />
+                            <div className="border-t border-gray-200">
+                              <div className="p-4 space-y-3">
+                                <div className="font-medium text-gray-900">Doel</div>
+                                <div className="space-y-3">
+                                  <RowLight indent label="Entiteitcode" value={doel.EntiteitcodeId} />
+                                  <RowLight
+                                    indent
+                                    label="AFD-dekkingcode"
+                                    value={doel.AfdDekingcode ?? doel.AfdDekkingcode}
+                                  />
+                                  <RowLight indent label="Attribuutcode" value={doel.AttribuutcodeId} />
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -266,7 +271,7 @@ const DynamiekregelDetail = () => {
             'transition-opacity duration-200',
             jsonModalMounted ? 'opacity-100' : 'opacity-0',
           ].join(' ')}
-          // Klik naast popup sluit (panel stopt bubbling)
+          // Klik naast popup sluit
           onMouseDown={closeJsonModal}
         >
           <div
@@ -288,11 +293,10 @@ const DynamiekregelDetail = () => {
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              {/* titel: dik + 1 punt groter */}
               <p className="text-base font-semibold text-gray-900">Volledige JSON</p>
 
-              {/* Sluiten naar header (op plek van Kopieer JSON) */}
-              <button onClick={closeJsonModal} className={[baseBtn, activeBtn, 'flex items-center gap-2'].join(' ')}>
+              {/* Sluiten: behoud oude (outline) stijl */}
+              <button onClick={closeJsonModal} className={[baseBtn, inactiveBtn].join(' ')}>
                 Sluiten
               </button>
             </div>
@@ -303,7 +307,7 @@ const DynamiekregelDetail = () => {
               </pre>
             </div>
 
-            {/* Kopieer JSON naar footer (regel waar Sluiten eerst stond), rechts uitgelijnd */}
+            {/* Kopieer: footer, rechts uitgelijnd */}
             <div className="px-5 py-4 border-t border-gray-200 flex justify-end">
               <button onClick={copyJson} className={[baseBtn, activeBtn, 'flex items-center gap-2'].join(' ')}>
                 <Copy className="w-4 h-4" />

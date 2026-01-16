@@ -123,7 +123,7 @@ const RuleDetail = () => {
           </button>
 
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
-            Regel {regelId}
+            Acceptatieregel {regelId}
           </h1>
         </div>
 

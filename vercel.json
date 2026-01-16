@@ -9,6 +9,10 @@
       "maxDuration": 30,
       "memory": 1024
     },
+    "api/dynamiekregels.py": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
     "api/explain-rule.py": {
       "maxDuration": 30,
       "memory": 1024

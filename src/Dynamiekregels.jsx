@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { RefreshCw, ChevronLeft, ChevronRight, AlertCircle, X, Pencil, Info } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -12,7 +11,7 @@ const baseBtn =
 const inactiveBtn = 'brand-outline hover:bg-red-50';
 const activeBtn = 'brand-primary text-white border-transparent shadow-sm';
 
-const App = () => {
+const Dynamiekregels = () => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -560,8 +559,8 @@ const App = () => {
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">Acceptatieregels</h1>
-                <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">Beheer van verzekering acceptatieregels</p>
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">Dynamiekregels</h1>
+                <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">Beheer van dynamiekregels</p>
               </div>
 
               <div className="flex flex-col gap-2 md:flex-row md:items-center">
@@ -1179,4 +1178,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Dynamiekregels;

@@ -32,7 +32,6 @@ const RuleDetail = () => {
           throw new Error(`Failed to fetch details (status ${res.status})`);
         }
         const data = await res.json();
-        // The API returns a single rule object, but normalize just in case
         const rule = Array.isArray(data) ? data[0] : data;
         setDetail(rule);
         setExplanation({ bullets: [], summary: '' });
@@ -74,9 +73,7 @@ const RuleDetail = () => {
         try {
           const payload = await response.json();
           message = payload.message || payload.error || message;
-        } catch (err) {
-          // ignore JSON parse failure
-        }
+        } catch (err) {}
         throw new Error(message);
       }
       const data = await response.json();
@@ -103,7 +100,7 @@ const RuleDetail = () => {
   };
 
   const externNummer =
-    (detail?.ExternNummer ?? detail?.externNummer ?? '').toString().trim();
+    detail?.ExternNummer || detail?.externNummer || '-';
 
   return (
     <div className="min-h-screen brand-page">
@@ -127,7 +124,6 @@ const RuleDetail = () => {
 
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
             Acceptatieregel {regelId}
-            {externNummer ? ` (${externNummer})` : ''}
           </h1>
         </div>
 
@@ -152,6 +148,16 @@ const RuleDetail = () => {
                 </dt>
                 <dd className="text-lg text-gray-900 dark:text-slate-100">
                   {detail.Omschrijving || detail.omschrijving || '-'}
+                </dd>
+              </div>
+
+              {/* ✅ Nieuw blok: ExternNummer (zelfde stijl) */}
+              <div>
+                <dt className="text-sm text-gray-500 dark:text-slate-400">
+                  Extern nummer
+                </dt>
+                <dd className="text-lg text-gray-900 dark:text-slate-100">
+                  {externNummer}
                 </dd>
               </div>
 

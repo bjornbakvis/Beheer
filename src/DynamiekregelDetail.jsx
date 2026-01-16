@@ -17,17 +17,22 @@ const formatValue = (value) => {
   return String(value);
 };
 
-const Row = ({ label, value }) => (
-  <div className="flex gap-4">
-    <div className="w-56 font-medium text-gray-900">{label}</div>
-    <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
+// Rows: waarden altijd in dezelfde kolom (ook bij ingesprongen secties)
+const Row = ({ label, value, indent = false }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-1 sm:gap-4">
+    <div className={['text-gray-900 font-medium', indent ? 'sm:pl-6' : ''].join(' ')}>
+      {label}
+    </div>
+    <div className="text-gray-900 break-words">{formatValue(value)}</div>
   </div>
 );
 
-const RowLight = ({ label, value }) => (
-  <div className="flex gap-4">
-    <div className="w-56 text-gray-900">{label}</div>
-    <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
+const RowLight = ({ label, value, indent = false }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-1 sm:gap-4">
+    <div className={['text-gray-900', indent ? 'sm:pl-6' : ''].join(' ')}>
+      {label}
+    </div>
+    <div className="text-gray-900 break-words">{formatValue(value)}</div>
   </div>
 );
 
@@ -40,10 +45,33 @@ const DynamiekregelDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Modal state met animaties
-  const [showJsonModal, setShowJsonModal] = useState(false); // in DOM
-  const [jsonModalMounted, setJsonModalMounted] = useState(false); // anim in
+  // Modal state met subtiele animatie
+  const [showJsonModal, setShowJsonModal] = useState(false);
+  const [jsonModalMounted, setJsonModalMounted] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const openJsonModal = () => {
+    setShowJsonModal(true);
+    requestAnimationFrame(() => setJsonModalMounted(true));
+  };
+
+  const closeJsonModal = () => {
+    setJsonModalMounted(false);
+    window.setTimeout(() => {
+      setShowJsonModal(false);
+      setCopied(false);
+    }, 180);
+  };
+
+  const copyJson = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      setCopied(false);
+    }
+  };
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -97,30 +125,6 @@ const DynamiekregelDetail = () => {
       gevolg: detail.Gevolg,
     };
   }, [detail]);
-
-  const openJsonModal = () => {
-    setShowJsonModal(true);
-    requestAnimationFrame(() => setJsonModalMounted(true));
-  };
-
-  const closeJsonModal = () => {
-    setJsonModalMounted(false);
-    window.setTimeout(() => {
-      setShowJsonModal(false);
-      setCopied(false);
-    }, 180);
-  };
-
-  const copyJson = async () => {
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    } catch {
-      // Niets forceren; in sommige browsers/contexts kan clipboard blokkeren.
-      setCopied(false);
-    }
-  };
 
   return (
     <div className="min-h-screen brand-page">
@@ -194,17 +198,17 @@ const DynamiekregelDetail = () => {
               <div>
                 <div className="text-sm text-gray-500">Inhoud</div>
 
-                {/* 1 punt kleiner, inhoud ongewijzigd */}
+                {/* 1 punt kleiner, waarden overal uitgelijnd */}
                 <div className="mt-2 space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
                   <Row label="AFD-branchecode" value={vm.afdBranchecode} />
                   <Row label="Herkomst" value={vm.herkomst} />
 
                   <div>
                     <div className="font-medium text-gray-900">Bron</div>
-                    <div className="mt-2 ml-6 space-y-3">
-                      <RowLight label="Entiteitcode" value={vm.bronEntiteit} />
-                      <RowLight label="AFD-dekkingcode" value={vm.bronAfdDekking} />
-                      <RowLight label="Attribuutcode" value={vm.bronAttribuut} />
+                    <div className="mt-2 space-y-3">
+                      <RowLight indent label="Entiteitcode" value={vm.bronEntiteit} />
+                      <RowLight indent label="AFD-dekkingcode" value={vm.bronAfdDekking} />
+                      <RowLight indent label="Attribuutcode" value={vm.bronAttribuut} />
                     </div>
                   </div>
 
@@ -215,23 +219,27 @@ const DynamiekregelDetail = () => {
                       {vm.rekenregels.map((rr, idx) => {
                         const doel = rr.Doel || {};
                         return (
-                          <div key={idx} className="rounded-lg border border-gray-200 bg-white/70 p-4 space-y-3">
+                          <div
+                            key={idx}
+                            className="rounded-lg border border-gray-200 bg-white/70 p-4 space-y-3"
+                          >
                             <div className="font-medium text-gray-900">Rekenregel {idx + 1}</div>
 
-                            <div className="ml-6 space-y-3">
-                              <RowLight label="Operator" value={rr.Operator} />
-                              <RowLight label="Waarde" value={rr.Waarde} />
+                            <div className="space-y-3">
+                              <RowLight indent label="Operator" value={rr.Operator} />
+                              <RowLight indent label="Waarde" value={rr.Waarde} />
                             </div>
 
                             <div className="pt-3 border-t border-gray-200">
                               <div className="font-medium text-gray-900">Doel</div>
-                              <div className="mt-2 ml-6 space-y-3">
-                                <RowLight label="Entiteitcode" value={doel.EntiteitcodeId} />
+                              <div className="mt-2 space-y-3">
+                                <RowLight indent label="Entiteitcode" value={doel.EntiteitcodeId} />
                                 <RowLight
+                                  indent
                                   label="AFD-dekkingcode"
                                   value={doel.AfdDekingcode ?? doel.AfdDekkingcode}
                                 />
-                                <RowLight label="Attribuutcode" value={doel.AttribuutcodeId} />
+                                <RowLight indent label="Attribuutcode" value={doel.AttribuutcodeId} />
                               </div>
                             </div>
                           </div>
@@ -258,12 +266,9 @@ const DynamiekregelDetail = () => {
             'transition-opacity duration-200',
             jsonModalMounted ? 'opacity-100' : 'opacity-0',
           ].join(' ')}
-          // Klik naast popup sluit (backdrop click)
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) closeJsonModal();
-          }}
+          // Klik naast popup sluit (panel stopt bubbling)
+          onMouseDown={closeJsonModal}
         >
-          {/* Backdrop */}
           <div
             className={[
               'absolute inset-0',
@@ -274,26 +279,21 @@ const DynamiekregelDetail = () => {
             ].join(' ')}
           />
 
-          {/* Panel */}
           <div
             className={[
-              'relative w-full max-w-3xl',
-              'rounded-2xl border border-gray-200 brand-modal bg-white shadow-2xl',
+              'relative w-full max-w-3xl rounded-2xl border border-gray-200 brand-modal bg-white shadow-2xl',
               'transition-transform duration-200',
               jsonModalMounted ? 'translate-y-0 scale-100' : 'translate-y-2 scale-[0.98]',
             ].join(' ')}
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-600" />
-                <p className="text-sm font-medium text-gray-900">Volledige JSON</p>
-              </div>
+              {/* titel: dik + 1 punt groter */}
+              <p className="text-base font-semibold text-gray-900">Volledige JSON</p>
 
-              {/* Op plek van kruisje: Kopieer knop, zelfde stijl als Refresh */}
-              <button onClick={copyJson} className={[baseBtn, activeBtn, 'flex items-center gap-2'].join(' ')}>
-                <Copy className="w-4 h-4" />
-                {copied ? 'Gekopieerd' : 'Kopieer JSON'}
+              {/* Sluiten naar header (op plek van Kopieer JSON) */}
+              <button onClick={closeJsonModal} className={[baseBtn, activeBtn, 'flex items-center gap-2'].join(' ')}>
+                Sluiten
               </button>
             </div>
 
@@ -303,9 +303,11 @@ const DynamiekregelDetail = () => {
               </pre>
             </div>
 
+            {/* Kopieer JSON naar footer (regel waar Sluiten eerst stond), rechts uitgelijnd */}
             <div className="px-5 py-4 border-t border-gray-200 flex justify-end">
-              <button onClick={closeJsonModal} className={[baseBtn, inactiveBtn].join(' ')}>
-                Sluiten
+              <button onClick={copyJson} className={[baseBtn, activeBtn, 'flex items-center gap-2'].join(' ')}>
+                <Copy className="w-4 h-4" />
+                {copied ? 'Gekopieerd' : 'Kopieer JSON'}
               </button>
             </div>
           </div>

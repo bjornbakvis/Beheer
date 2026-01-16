@@ -13,6 +13,7 @@ const DynamiekregelDetail = () => {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [explainLoading, setExplainLoading] = useState(false);
   const [explainError, setExplainError] = useState(null);
   const [explanation, setExplanation] = useState({ bullets: [], summary: '' });
@@ -21,16 +22,20 @@ const DynamiekregelDetail = () => {
     const fetchDetail = async () => {
       setLoading(true);
       setError(null);
+
       try {
         const res = await fetch(withApiEnv(`/api/dynamiekregels?regelId=${encodeURIComponent(regelId)}`), {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-store', ...getAuthHeader() },
         });
+
         if (!res.ok) {
           throw new Error(`Failed to fetch details (status ${res.status})`);
         }
+
         const data = await res.json();
         const rule = Array.isArray(data) ? data[0] : data;
+
         setDetail(rule);
         setExplanation({ bullets: [], summary: '' });
         setExplainError(null);
@@ -42,6 +47,7 @@ const DynamiekregelDetail = () => {
     };
 
     if (regelId) fetchDetail();
+
     const handleEnvChange = () => {
       if (regelId) fetchDetail();
     };
@@ -52,9 +58,11 @@ const DynamiekregelDetail = () => {
   const handleExplain = async () => {
     const expression = detail?.Expressie || detail?.expressie;
     if (!expression) return;
+
     setExplainLoading(true);
     setExplainError(null);
     setExplanation({ bullets: [], summary: '' });
+
     try {
       const response = await fetch('/api/explain-rule', {
         method: 'POST',
@@ -64,6 +72,7 @@ const DynamiekregelDetail = () => {
         },
         body: JSON.stringify({ expression }),
       });
+
       if (!response.ok) {
         let message = `Failed to explain rule (status ${response.status})`;
         try {
@@ -72,17 +81,20 @@ const DynamiekregelDetail = () => {
         } catch (_) {}
         throw new Error(message);
       }
+
       const data = await response.json();
       const raw = (data.explanation || '').trim();
+
       const lines = raw
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean);
-      const bullets = lines
-        .filter((line) => line.startsWith('- '))
-        .map((line) => line.slice(2));
+
+      const bullets = lines.filter((line) => line.startsWith('- ')).map((line) => line.slice(2));
+
       const summaryLine = lines.find((line) => line.toLowerCase().startsWith('samenvatting:'));
       const summary = summaryLine ? summaryLine.replace(/^samenvatting:\s*/i, '') : '';
+
       setExplanation({ bullets, summary });
     } catch (err) {
       setExplainError(err.message);
@@ -94,6 +106,7 @@ const DynamiekregelDetail = () => {
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
+
       <div className="max-w-4xl mx-auto p-6">
         <div className="flex items-center gap-3 mb-4">
           <button
@@ -147,9 +160,9 @@ const DynamiekregelDetail = () => {
                     onClick={handleExplain}
                     disabled={explainLoading}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors
-             text-white brand-primary
-             focus:outline-none focus:ring-2 focus:ring-red-200
-             disabled:opacity-50 disabled:cursor-not-allowed"
+                      text-white brand-primary
+                      focus:outline-none focus:ring-2 focus:ring-red-200
+                      disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span aria-hidden="true">✨</span>
                     {explainLoading ? 'Uitleg ophalen...' : 'Wat doet deze regel?'}
@@ -168,9 +181,7 @@ const DynamiekregelDetail = () => {
                       </ul>
                     )}
                     {explanation.summary && (
-                      <p className="mt-3 text-sm text-slate-200">
-                        Samenvatting: {explanation.summary}
-                      </p>
+                      <p className="mt-3 text-sm text-slate-200">Samenvatting: {explanation.summary}</p>
                     )}
                   </div>
                 )}

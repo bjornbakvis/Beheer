@@ -165,7 +165,7 @@ const DynamiekregelDetail = () => {
                       disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span aria-hidden="true">✨</span>
-                    {explainLoading ? 'Uitleg ophalen...' : 'Wat doet deze regel?'}
+                    {explainLoading ? 'Uitleg ophalen...' : 'Wat doet deze dynamiekregel?'}
                   </button>
                 </div>
 

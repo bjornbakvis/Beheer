@@ -18,21 +18,6 @@ const Row = ({ label, value }) => (
   </div>
 );
 
-/**
- * Veld met daaronder de "bron-weergave" (zoals jij vroeg):
- * - Boven: menselijk label + waarde
- * - Onder (ingesprongen): waar het vandaan komt in de response (bijv. "Bron.EntiteitcodeId")
- */
-const RowWithSourcePath = ({ label, value, sourcePathLabel, sourceValue }) => (
-  <div className="space-y-1">
-    <Row label={label} value={value} />
-    <div className="ml-6 text-sm text-gray-700 flex gap-4">
-      <div className="w-56">{sourcePathLabel}</div>
-      <div className="flex-1 break-words">{formatValue(sourceValue)}</div>
-    </div>
-  </div>
-);
-
 const DynamiekregelDetail = () => {
   const { regelId } = useParams();
   const navigate = useNavigate();
@@ -82,14 +67,16 @@ const DynamiekregelDetail = () => {
   const vm = useMemo(() => {
     if (!detail || typeof detail !== 'object') return null;
 
-    // Exact volgens jouw response
     const omschrijving = detail.Omschrijving ?? '';
     const afdBranchecode = detail.AfdBrancheCodeId;
     const herkomst = detail.Herkomst;
 
     const bron = detail.Bron || {};
     const bronEntiteit = bron.EntiteitcodeId;
-    const bronAfdDekking = bron.AfdDekingcode; // let op: spelling in response
+
+    // Future-proof: GET kan 1k hebben, PUT (later) 2k
+    const bronAfdDekking = bron.AfdDekingcode ?? bron.AfdDekkingcode;
+
     const bronAttribuut = bron.AttribuutcodeId;
 
     const rekenregels = Array.isArray(detail.Rekenregels) ? detail.Rekenregels : [];
@@ -166,24 +153,9 @@ const DynamiekregelDetail = () => {
                   <div className="mt-1">
                     <div className="font-medium text-gray-900">Bron</div>
                     <div className="mt-2 ml-6 space-y-3">
-                      <RowWithSourcePath
-                        label="Entiteitcode"
-                        value={vm.bronEntiteit}
-                        sourcePathLabel="Bron.EntiteitcodeId"
-                        sourceValue={vm.bronEntiteit}
-                      />
-                      <RowWithSourcePath
-                        label="AFD-dekkingcode"
-                        value={vm.bronAfdDekking}
-                        sourcePathLabel="Bron.AfdDekingcode"
-                        sourceValue={vm.bronAfdDekking}
-                      />
-                      <RowWithSourcePath
-                        label="Attribuutcode"
-                        value={vm.bronAttribuut}
-                        sourcePathLabel="Bron.AttribuutcodeId"
-                        sourceValue={vm.bronAttribuut}
-                      />
+                      <Row label="Entiteitcode" value={vm.bronEntiteit} />
+                      <Row label="AFD-dekkingcode" value={vm.bronAfdDekking} />
+                      <Row label="Attribuutcode" value={vm.bronAttribuut} />
                     </div>
                   </div>
 
@@ -197,6 +169,8 @@ const DynamiekregelDetail = () => {
                       ) : (
                         vm.rekenregels.map((rr, idx) => {
                           const doel = rr?.Doel || {};
+                          const doelAfdDekking = doel?.AfdDekingcode ?? doel?.AfdDekkingcode;
+
                           return (
                             <div
                               key={rr?.RekenregelId ?? idx}
@@ -215,24 +189,9 @@ const DynamiekregelDetail = () => {
                               <div className="pt-3 border-t border-gray-200">
                                 <div className="font-medium text-gray-900">Doel</div>
                                 <div className="mt-2 ml-6 space-y-3">
-                                  <RowWithSourcePath
-                                    label="Entiteitcode"
-                                    value={doel?.EntiteitcodeId}
-                                    sourcePathLabel="Doel.EntiteitcodeId"
-                                    sourceValue={doel?.EntiteitcodeId}
-                                  />
-                                  <RowWithSourcePath
-                                    label="AFD-dekkingcode"
-                                    value={doel?.AfdDekingcode}
-                                    sourcePathLabel="Doel.AfdDekingcode"
-                                    sourceValue={doel?.AfdDekingcode}
-                                  />
-                                  <RowWithSourcePath
-                                    label="Attribuutcode"
-                                    value={doel?.AttribuutcodeId}
-                                    sourcePathLabel="Doel.AttribuutcodeId"
-                                    sourceValue={doel?.AttribuutcodeId}
-                                  />
+                                  <Row label="Entiteitcode" value={doel?.EntiteitcodeId} />
+                                  <Row label="AFD-dekkingcode" value={doelAfdDekking} />
+                                  <Row label="Attribuutcode" value={doel?.AttribuutcodeId} />
                                 </div>
                               </div>
                             </div>

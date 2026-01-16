@@ -14,10 +14,6 @@ const DynamiekregelDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [explainLoading, setExplainLoading] = useState(false);
-  const [explainError, setExplainError] = useState(null);
-  const [explanation, setExplanation] = useState({ bullets: [], summary: '' });
-
   useEffect(() => {
     const fetchDetail = async () => {
       setLoading(true);
@@ -37,8 +33,6 @@ const DynamiekregelDetail = () => {
         const rule = Array.isArray(data) ? data[0] : data;
 
         setDetail(rule);
-        setExplanation({ bullets: [], summary: '' });
-        setExplainError(null);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -55,53 +49,7 @@ const DynamiekregelDetail = () => {
     return () => window.removeEventListener('apiEnvChange', handleEnvChange);
   }, [regelId]);
 
-  const handleExplain = async () => {
-    const expression = detail?.Expressie || detail?.expressie;
-    if (!expression) return;
-
-    setExplainLoading(true);
-    setExplainError(null);
-    setExplanation({ bullets: [], summary: '' });
-
-    try {
-      const response = await fetch('/api/explain-rule', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify({ expression }),
-      });
-
-      if (!response.ok) {
-        let message = `Failed to explain rule (status ${response.status})`;
-        try {
-          const payload = await response.json();
-          message = payload.message || payload.error || message;
-        } catch (_) {}
-        throw new Error(message);
-      }
-
-      const data = await response.json();
-      const raw = (data.explanation || '').trim();
-
-      const lines = raw
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
-
-      const bullets = lines.filter((line) => line.startsWith('- ')).map((line) => line.slice(2));
-
-      const summaryLine = lines.find((line) => line.toLowerCase().startsWith('samenvatting:'));
-      const summary = summaryLine ? summaryLine.replace(/^samenvatting:\s*/i, '') : '';
-
-      setExplanation({ bullets, summary });
-    } catch (err) {
-      setExplainError(err.message);
-    } finally {
-      setExplainLoading(false);
-    }
-  };
+  const fullResponseText = detail ? JSON.stringify(detail, null, 2) : '-';
 
   return (
     <div className="min-h-screen brand-page">
@@ -151,40 +99,11 @@ const DynamiekregelDetail = () => {
 
               <div>
                 <dt className="text-sm text-gray-500 dark:text-slate-400">Expressie</dt>
-                <dd className="text-lg text-gray-900 whitespace-pre-wrap dark:text-slate-100">
-                  {detail.Expressie || detail.expressie || '-'}
+                <dd className="mt-2">
+                  <pre className="text-sm text-gray-900 whitespace-pre-wrap break-words dark:text-slate-100">
+                    {fullResponseText}
+                  </pre>
                 </dd>
-
-                <div className="mt-4 flex items-center gap-3">
-                  <button
-                    onClick={handleExplain}
-                    disabled={explainLoading}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors
-                      text-white brand-primary
-                      focus:outline-none focus:ring-2 focus:ring-red-200
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span aria-hidden="true">✨</span>
-                    {explainLoading ? 'Uitleg ophalen...' : 'Wat doet deze dynamiekregel?'}
-                  </button>
-                </div>
-
-                {explainError && <p className="mt-3 text-sm text-red-400">{explainError}</p>}
-
-                {(explanation.bullets.length > 0 || explanation.summary) && (
-                  <div className="mt-4 rounded-lg border border-purple-500/30 bg-purple-900/20 p-4 text-sm text-slate-100">
-                    {explanation.bullets.length > 0 && (
-                      <ul className="space-y-2 list-disc pl-5">
-                        {explanation.bullets.map((item, index) => (
-                          <li key={`${item}-${index}`}>{item}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {explanation.summary && (
-                      <p className="mt-3 text-sm text-slate-200">Samenvatting: {explanation.summary}</p>
-                    )}
-                  </div>
-                )}
               </div>
             </dl>
           ) : (

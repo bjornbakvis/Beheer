@@ -68,6 +68,9 @@ const TopNav = () => {
           <NavLink to="/" className={tabClasses} end>
             Acceptatieregels
           </NavLink>
+          <NavLink to="/dynamiekregels" className={tabClasses}>
+            Dynamiekregels
+          </NavLink>
           <NavLink to="/producten" className={tabClasses}>
             Producten
           </NavLink>

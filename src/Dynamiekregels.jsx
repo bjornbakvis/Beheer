@@ -438,7 +438,7 @@ const Dynamiekregels = () => {
   const buildUpdatePayload = () => {
     const afd = toNumberOrZero(editForm.afdBrancheCodeId);
     const regelIdNum = toNumberOrZero(editForm.regelId);
-    const resourceId = editForm.resourceId?.trim() ? editForm.resourceId.trim() : makeUuid();
+    const resourceId = makeUuid();
 
     const originalById = new Map(
       (originalEditSnapshot?.Rekenregels || []).map((rr) => [toNumberOrZero(rr.RekenregelId), rr])

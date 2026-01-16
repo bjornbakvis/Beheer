@@ -11,9 +11,18 @@ const formatValue = (value) => {
   return String(value);
 };
 
+// Standaard rij (label dikgedrukt) – voor hoofdvelden zoals AFD-branchecode / Herkomst / Gevolg
 const Row = ({ label, value }) => (
   <div className="flex gap-4">
     <div className="w-56 font-medium text-gray-900">{label}</div>
+    <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
+  </div>
+);
+
+// Lichte rij (label NIET dikgedrukt) – voor items onder Bron/Doel en voor Operator/Waarde
+const RowLight = ({ label, value }) => (
+  <div className="flex gap-4">
+    <div className="w-56 text-gray-900">{label}</div>
     <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
   </div>
 );
@@ -73,10 +82,7 @@ const DynamiekregelDetail = () => {
 
     const bron = detail.Bron || {};
     const bronEntiteit = bron.EntiteitcodeId;
-
-    // Future-proof: GET kan 1k hebben, PUT (later) 2k
-    const bronAfdDekking = bron.AfdDekingcode ?? bron.AfdDekkingcode;
-
+    const bronAfdDekking = bron.AfdDekingcode ?? bron.AfdDekkingcode; // future-proof
     const bronAttribuut = bron.AttribuutcodeId;
 
     const rekenregels = Array.isArray(detail.Rekenregels) ? detail.Rekenregels : [];
@@ -153,9 +159,9 @@ const DynamiekregelDetail = () => {
                   <div className="mt-1">
                     <div className="font-medium text-gray-900">Bron</div>
                     <div className="mt-2 ml-6 space-y-3">
-                      <Row label="Entiteitcode" value={vm.bronEntiteit} />
-                      <Row label="AFD-dekkingcode" value={vm.bronAfdDekking} />
-                      <Row label="Attribuutcode" value={vm.bronAttribuut} />
+                      <RowLight label="Entiteitcode" value={vm.bronEntiteit} />
+                      <RowLight label="AFD-dekkingcode" value={vm.bronAfdDekking} />
+                      <RowLight label="Attribuutcode" value={vm.bronAttribuut} />
                     </div>
                   </div>
 
@@ -180,18 +186,18 @@ const DynamiekregelDetail = () => {
                                 Rekenregel {rr?.RekenregelId ?? idx + 1}
                               </div>
 
-                              <div className="space-y-2">
-                                <Row label="Rekenregel ID" value={rr?.RekenregelId} />
-                                <Row label="Operator" value={rr?.Operator} />
-                                <Row label="Waarde" value={rr?.Waarde} />
+                              {/* Operator + Waarde: inspringen zoals Bron */}
+                              <div className="ml-6 space-y-3">
+                                <RowLight label="Operator" value={rr?.Operator} />
+                                <RowLight label="Waarde" value={rr?.Waarde} />
                               </div>
 
                               <div className="pt-3 border-t border-gray-200">
                                 <div className="font-medium text-gray-900">Doel</div>
                                 <div className="mt-2 ml-6 space-y-3">
-                                  <Row label="Entiteitcode" value={doel?.EntiteitcodeId} />
-                                  <Row label="AFD-dekkingcode" value={doelAfdDekking} />
-                                  <Row label="Attribuutcode" value={doel?.AttribuutcodeId} />
+                                  <RowLight label="Entiteitcode" value={doel?.EntiteitcodeId} />
+                                  <RowLight label="AFD-dekkingcode" value={doelAfdDekking} />
+                                  <RowLight label="Attribuutcode" value={doel?.AttribuutcodeId} />
                                 </div>
                               </div>
                             </div>

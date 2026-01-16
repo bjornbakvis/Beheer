@@ -285,40 +285,32 @@ class handler(BaseHTTPRequestHandler):
             raw_body = self.rfile.read(content_length).decode("utf-8") if content_length else ""
             body = json.loads(raw_body) if raw_body else {}
 
-            afd_code = body.get("AfdBrancheCodeId")
-            omschrijving = body.get("Omschrijving")
-            expressie = body.get("Expressie")
-            regel_id = body.get("RegelId")
+            # Payload contract (DIAS):
+            # - Invoeren (create): NO RegelId in payload
+            # - Wijzigen (update): RegelId aanwezig en > 0
+            # Bron/Doel velden mogen leeg zijn.
             resource_id = body.get("ResourceId") or str(uuid.uuid4())
+            body["ResourceId"] = resource_id
 
-            if regel_id is not None:
-                if expressie is None or omschrijving is None:
-                    self._send_json(
-                        {"error": "RegelId, Omschrijving, and Expressie are required"},
-                        status_code=400,
-                    )
+            regel_id_raw = body.get("RegelId")
+            is_update = False
+            try:
+                if regel_id_raw is not None and str(regel_id_raw).strip() != "":
+                    is_update = int(regel_id_raw) > 0
+            except Exception:
+                # If it's not numeric, treat as update intent when provided
+                is_update = True
+
+            if is_update:
+                if body.get("RegelId") is None:
+                    self._send_json({"error": "RegelId is required for update"}, status_code=400)
                     return
-                payload = {
-                    "RegelId": regel_id,
-                    "Omschrijving": omschrijving,
-                    "Expressie": expressie,
-                    "ResourceId": resource_id,
-                }
-                data = update_rule(config, token, payload)
+                data = update_rule(config, token, body)
             else:
-                if afd_code is None or omschrijving is None or expressie is None:
-                    self._send_json(
-                        {"error": "AfdBrancheCodeId, Omschrijving, and Expressie are required"},
-                        status_code=400,
-                    )
-                    return
-                payload = {
-                    "AfdBrancheCodeId": afd_code,
-                    "Omschrijving": omschrijving,
-                    "Expressie": expressie,
-                    "ResourceId": resource_id,
-                }
-                data = create_rule(config, token, payload)
+                # Ensure RegelId is not sent on create
+                if "RegelId" in body:
+                    body.pop("RegelId", None)
+                data = create_rule(config, token, body)
 
             self._send_json(data, status_code=200)
 

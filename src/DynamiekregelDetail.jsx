@@ -5,30 +5,31 @@ import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { getAuthHeader } from './apiAuth';
 
-const formatLabel = (key) => {
-  if (!key) return '';
-  return key
-    .replace(/_/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .trim();
-};
-
 const formatValue = (value) => {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined || value === '') return '—';
   if (typeof value === 'boolean') return value ? 'true' : 'false';
-  if (typeof value === 'string' || typeof value === 'number') return String(value);
-  // Object/array: toon compact, ruwe JSON staat eronder toch al
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
+  return String(value);
 };
 
 const Row = ({ label, value }) => (
   <div className="flex gap-4">
     <div className="w-56 font-medium text-gray-900">{label}</div>
     <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
+  </div>
+);
+
+/**
+ * Veld met daaronder de "bron-weergave" (zoals jij vroeg):
+ * - Boven: menselijk label + waarde
+ * - Onder (ingesprongen): waar het vandaan komt in de response (bijv. "Bron.EntiteitcodeId")
+ */
+const RowWithSourcePath = ({ label, value, sourcePathLabel, sourceValue }) => (
+  <div className="space-y-1">
+    <Row label={label} value={value} />
+    <div className="ml-6 text-sm text-gray-700 flex gap-4">
+      <div className="w-56">{sourcePathLabel}</div>
+      <div className="flex-1 break-words">{formatValue(sourceValue)}</div>
+    </div>
   </div>
 );
 
@@ -78,54 +79,31 @@ const DynamiekregelDetail = () => {
     return () => window.removeEventListener('apiEnvChange', handleEnvChange);
   }, [regelId]);
 
-  const viewModel = useMemo(() => {
+  const vm = useMemo(() => {
     if (!detail || typeof detail !== 'object') return null;
 
-    const regelIdVal = detail.RegelId ?? detail.regelId ?? '';
-    const omschrijvingVal = detail.Omschrijving ?? detail.omschrijving ?? '';
+    // Exact volgens jouw response
+    const omschrijving = detail.Omschrijving ?? '';
+    const afdBranchecode = detail.AfdBrancheCodeId;
+    const herkomst = detail.Herkomst;
 
-    const afdBrancheCodeId = detail.AFDBrancheCodeId ?? detail.AfdBrancheCodeId ?? detail.afdBrancheCodeId;
-    const herkomst = detail.Herkomst ?? detail.herkomst;
+    const bron = detail.Bron || {};
+    const bronEntiteit = bron.EntiteitcodeId;
+    const bronAfdDekking = bron.AfdDekingcode; // let op: spelling in response
+    const bronAttribuut = bron.AttribuutcodeId;
 
-    const entiteitcode = detail.Entiteitcode ?? detail.entiteitcode;
-    const afdDekkingcode = detail.AFDdekkingcode ?? detail.afddekkingcode;
-    const attribuutcode = detail.AttribuutcodeId ?? detail.attribuutcodeId;
-
-    // Alles wat we NIET dubbel willen tonen in de nette weergave:
-    const excludedKeys = new Set([
-      'RegelId',
-      'regelId',
-      'Omschrijving',
-      'omschrijving',
-
-      'AFDBrancheCodeId',
-      'AfdBrancheCodeId',
-      'afdBrancheCodeId',
-
-      'Herkomst',
-      'herkomst',
-
-      'Entiteitcode',
-      'entiteitcode',
-      'AFDdekkingcode',
-      'afddekkingcode',
-      'AttribuutcodeId',
-      'attribuutcodeId',
-    ]);
-
-    const others = Object.entries(detail)
-      .filter(([k]) => !excludedKeys.has(k))
-      .sort(([a], [b]) => a.localeCompare(b, 'nl', { sensitivity: 'base' }));
+    const rekenregels = Array.isArray(detail.Rekenregels) ? detail.Rekenregels : [];
+    const gevolg = detail.Gevolg;
 
     return {
-      regelIdVal,
-      omschrijvingVal,
-      afdBrancheCodeId,
+      omschrijving,
+      afdBranchecode,
       herkomst,
-      entiteitcode,
-      afdDekkingcode,
-      attribuutcode,
-      others,
+      bronEntiteit,
+      bronAfdDekking,
+      bronAttribuut,
+      rekenregels,
+      gevolg,
     };
   }, [detail]);
 
@@ -166,46 +144,112 @@ const DynamiekregelDetail = () => {
                 <p className="text-xs">{error}</p>
               </div>
             </div>
-          ) : !detail || !viewModel ? (
+          ) : !detail || !vm ? (
             <p className="text-sm text-gray-600">Geen details gevonden.</p>
           ) : (
             <div className="space-y-6">
               {/* Omschrijving */}
               <div>
                 <div className="text-sm text-gray-500">Omschrijving</div>
-                <div className="text-lg text-gray-900">{viewModel.omschrijvingVal || '—'}</div>
+                <div className="text-lg text-gray-900">{vm.omschrijving || '—'}</div>
               </div>
 
               {/* Inhoud */}
               <div>
                 <div className="text-sm text-gray-500">Inhoud</div>
 
-                <div className="mt-2 space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <Row label="AFD-branchecode" value={viewModel.afdBrancheCodeId} />
-                  <Row label="Herkomst" value={viewModel.herkomst} />
+                <div className="mt-2 space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <Row label="AFD-branchecode" value={vm.afdBranchecode} />
+                  <Row label="Herkomst" value={vm.herkomst} />
 
-                  {/* Bron + ingesprongen velden */}
-                  <div className="mt-2">
+                  {/* Bron */}
+                  <div className="mt-1">
                     <div className="font-medium text-gray-900">Bron</div>
-                    <div className="mt-2 ml-6 space-y-2">
-                      <Row label="Entiteitcode" value={viewModel.entiteitcode} />
-                      <Row label="AFD-dekkingcode" value={viewModel.afdDekkingcode} />
-                      <Row label="Attribuutcode" value={viewModel.attribuutcode} />
+                    <div className="mt-2 ml-6 space-y-3">
+                      <RowWithSourcePath
+                        label="Entiteitcode"
+                        value={vm.bronEntiteit}
+                        sourcePathLabel="Bron.EntiteitcodeId"
+                        sourceValue={vm.bronEntiteit}
+                      />
+                      <RowWithSourcePath
+                        label="AFD-dekkingcode"
+                        value={vm.bronAfdDekking}
+                        sourcePathLabel="Bron.AfdDekingcode"
+                        sourceValue={vm.bronAfdDekking}
+                      />
+                      <RowWithSourcePath
+                        label="Attribuutcode"
+                        value={vm.bronAttribuut}
+                        sourcePathLabel="Bron.AttribuutcodeId"
+                        sourceValue={vm.bronAttribuut}
+                      />
                     </div>
                   </div>
 
-                  {/* Overige velden (alles wat verder nog in de API response zit) */}
-                  {viewModel.others.length > 0 && (
-                    <div className="pt-3 mt-3 border-t border-gray-200 space-y-2">
-                      {viewModel.others.map(([key, value]) => (
-                        <Row key={key} label={formatLabel(key)} value={value} />
-                      ))}
+                  {/* Rekenregels */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="font-medium text-gray-900">Rekenregels</div>
+
+                    <div className="mt-3 space-y-3">
+                      {vm.rekenregels.length === 0 ? (
+                        <div className="text-sm text-gray-700">Geen rekenregels gevonden.</div>
+                      ) : (
+                        vm.rekenregels.map((rr, idx) => {
+                          const doel = rr?.Doel || {};
+                          return (
+                            <div
+                              key={rr?.RekenregelId ?? idx}
+                              className="rounded-lg border border-gray-200 bg-white/70 p-4 space-y-3"
+                            >
+                              <div className="font-medium text-gray-900">
+                                Rekenregel {rr?.RekenregelId ?? idx + 1}
+                              </div>
+
+                              <div className="space-y-2">
+                                <Row label="Rekenregel ID" value={rr?.RekenregelId} />
+                                <Row label="Operator" value={rr?.Operator} />
+                                <Row label="Waarde" value={rr?.Waarde} />
+                              </div>
+
+                              <div className="pt-3 border-t border-gray-200">
+                                <div className="font-medium text-gray-900">Doel</div>
+                                <div className="mt-2 ml-6 space-y-3">
+                                  <RowWithSourcePath
+                                    label="Entiteitcode"
+                                    value={doel?.EntiteitcodeId}
+                                    sourcePathLabel="Doel.EntiteitcodeId"
+                                    sourceValue={doel?.EntiteitcodeId}
+                                  />
+                                  <RowWithSourcePath
+                                    label="AFD-dekkingcode"
+                                    value={doel?.AfdDekingcode}
+                                    sourcePathLabel="Doel.AfdDekingcode"
+                                    sourceValue={doel?.AfdDekingcode}
+                                  />
+                                  <RowWithSourcePath
+                                    label="Attribuutcode"
+                                    value={doel?.AttribuutcodeId}
+                                    sourcePathLabel="Doel.AttribuutcodeId"
+                                    sourceValue={doel?.AttribuutcodeId}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Gevolg */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <Row label="Gevolg" value={vm.gevolg} />
+                  </div>
                 </div>
               </div>
 
-              {/* Volledige JSON (UI-font, normale grootte) */}
+              {/* Volledige JSON */}
               <div>
                 <div className="text-sm text-gray-500">Volledige JSON</div>
                 <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-900 whitespace-pre-wrap break-words">

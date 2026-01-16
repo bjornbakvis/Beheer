@@ -6,14 +6,12 @@ import { withApiEnv } from './apiEnv';
 import { getAuthHeader } from './apiAuth';
 
 /**
- * Recursieve JSON viewer, leesbaar voor niet-tech users
+ * Eenvoudige leesbare JSON-weergave
  */
 const JsonValue = ({ value, level = 0 }) => {
   const indent = { marginLeft: level * 16 };
 
-  if (value === null) {
-    return <span className="text-gray-500">null</span>;
-  }
+  if (value === null) return <span className="text-gray-500">null</span>;
 
   if (Array.isArray(value)) {
     if (value.length === 0) return <span>[]</span>;
@@ -43,9 +41,7 @@ const JsonValue = ({ value, level = 0 }) => {
     );
   }
 
-  if (typeof value === 'boolean') {
-    return <span>{value ? 'true' : 'false'}</span>;
-  }
+  if (typeof value === 'boolean') return <span>{value ? 'true' : 'false'}</span>;
 
   return <span>{String(value)}</span>;
 };
@@ -78,8 +74,7 @@ const DynamiekregelDetail = () => {
         }
 
         const data = await res.json();
-        const rule = Array.isArray(data) ? data[0] : data;
-        setDetail(rule);
+        setDetail(Array.isArray(data) ? data[0] : data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -137,6 +132,7 @@ const DynamiekregelDetail = () => {
             </div>
           ) : detail ? (
             <div className="space-y-6">
+              {/* Omschrijving */}
               <div>
                 <div className="text-sm text-gray-500">Omschrijving</div>
                 <div className="text-lg text-gray-900">
@@ -144,14 +140,20 @@ const DynamiekregelDetail = () => {
                 </div>
               </div>
 
+              {/* Inhoud (zelfde stijl als Omschrijving) */}
               <div>
-                <div className="text-lg font-semibold text-gray-900 mb-3">
-                  Inhoud
-                </div>
-
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="text-sm text-gray-500">Inhoud</div>
+                <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
                   <JsonValue value={detail} />
                 </div>
+              </div>
+
+              {/* Volledige JSON */}
+              <div>
+                <div className="text-sm text-gray-500">Volledige JSON</div>
+                <pre className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm whitespace-pre-wrap break-words text-gray-900">
+{JSON.stringify(detail, null, 2)}
+                </pre>
               </div>
             </div>
           ) : (

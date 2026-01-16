@@ -560,7 +560,7 @@ const App = () => {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">Acceptatieregels</h1>
-                <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">Beheer van verzekering acceptatieregels</p>
+                <p className="text-sm text-gray-600 mt-1 dark:text-slate-300">Beheer van acceptatieregels</p>
               </div>
 
               <div className="flex flex-col gap-2 md:flex-row md:items-center">

@@ -5,47 +5,6 @@ import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { getAuthHeader } from './apiAuth';
 
-/**
- * Eenvoudige leesbare JSON-weergave
- */
-const JsonValue = ({ value, level = 0 }) => {
-  const indent = { marginLeft: level * 16 };
-
-  if (value === null) return <span className="text-gray-500">null</span>;
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) return <span>[]</span>;
-    return (
-      <div style={indent} className="space-y-1">
-        {value.map((item, idx) => (
-          <JsonValue key={idx} value={item} level={level + 1} />
-        ))}
-      </div>
-    );
-  }
-
-  if (typeof value === 'object') {
-    return (
-      <div style={indent} className="space-y-2">
-        {Object.entries(value).map(([key, val]) => (
-          <div key={key} className="flex gap-3">
-            <div className="min-w-[180px] font-medium text-gray-900">
-              {key}
-            </div>
-            <div className="flex-1 text-gray-800 break-words">
-              <JsonValue value={val} level={level + 1} />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (typeof value === 'boolean') return <span>{value ? 'true' : 'false'}</span>;
-
-  return <span>{String(value)}</span>;
-};
-
 const DynamiekregelDetail = () => {
   const { regelId } = useParams();
   const navigate = useNavigate();
@@ -83,13 +42,22 @@ const DynamiekregelDetail = () => {
     };
 
     if (regelId) fetchDetail();
-
-    const handleEnvChange = () => {
-      if (regelId) fetchDetail();
-    };
-    window.addEventListener('apiEnvChange', handleEnvChange);
-    return () => window.removeEventListener('apiEnvChange', handleEnvChange);
+    window.addEventListener('apiEnvChange', fetchDetail);
+    return () => window.removeEventListener('apiEnvChange', fetchDetail);
   }, [regelId]);
+
+  if (!detail) return null;
+
+  const {
+    RegelId,
+    Omschrijving,
+    AFDBrancheCodeId,
+    Herkomst,
+    Entiteitcode,
+    AFDdekkingcode,
+    AttribuutcodeId,
+    ...rest
+  } = detail;
 
   return (
     <div className="min-h-screen brand-page">
@@ -106,7 +74,7 @@ const DynamiekregelDetail = () => {
                 navigate(-1);
               }
             }}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200 brand-outline hover:bg-red-50"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border brand-outline hover:bg-red-50"
           >
             <ArrowLeft className="w-4 h-4" />
             Terug
@@ -119,45 +87,67 @@ const DynamiekregelDetail = () => {
 
         <div className="rounded-2xl brand-card border border-gray-200 p-6">
           {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+            <div className="flex justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-b-2 border-red-600 rounded-full" />
             </div>
           ) : error ? (
-            <div className="flex items-start gap-3 text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="flex gap-3 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <AlertCircle className="w-5 h-5" />
               <div>
-                <p className="font-medium text-sm">Kon details niet laden</p>
-                <p className="text-xs mt-1">{error}</p>
+                <p className="text-sm font-medium">Kon details niet laden</p>
+                <p className="text-xs">{error}</p>
               </div>
             </div>
-          ) : detail ? (
+          ) : (
             <div className="space-y-6">
               {/* Omschrijving */}
               <div>
                 <div className="text-sm text-gray-500">Omschrijving</div>
-                <div className="text-lg text-gray-900">
-                  {detail.Omschrijving || detail.omschrijving || '-'}
-                </div>
+                <div className="text-lg text-gray-900">{Omschrijving || '-'}</div>
               </div>
 
-              {/* Inhoud (zelfde stijl als Omschrijving) */}
+              {/* Inhoud */}
               <div>
                 <div className="text-sm text-gray-500">Inhoud</div>
-                <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <JsonValue value={detail} />
+
+                <div className="mt-2 space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex gap-4">
+                    <div className="w-56 font-medium text-gray-900">AFD-branchecode</div>
+                    <div>{AFDBrancheCodeId ?? '-'}</div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="w-56 font-medium text-gray-900">Herkomst</div>
+                    <div>{Herkomst ?? '-'}</div>
+                  </div>
+
+                  <div className="ml-6 space-y-2">
+                    <div className="flex gap-4">
+                      <div className="w-50 font-medium text-gray-800">Entiteitcode</div>
+                      <div>{Entiteitcode ?? '-'}</div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="w-50 font-medium text-gray-800">AFD-dekkingcode</div>
+                      <div>{AFDdekkingcode ?? '-'}</div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="w-50 font-medium text-gray-800">Attribuutcode</div>
+                      <div>{AttribuutcodeId ?? '-'}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Volledige JSON */}
               <div>
                 <div className="text-sm text-gray-500">Volledige JSON</div>
-                <pre className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm whitespace-pre-wrap break-words text-gray-900">
-{JSON.stringify(detail, null, 2)}
-                </pre>
+                <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-900 whitespace-pre-wrap break-words">
+                  {JSON.stringify(detail, null, 2)}
+                </div>
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-gray-600">Geen details gevonden.</p>
           )}
         </div>
       </div>

@@ -18,16 +18,16 @@ const formatValue = (value) => {
 };
 
 const Row = ({ label, value }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-1 sm:gap-4">
-    <div className="text-gray-900 font-medium">{label}</div>
-    <div className="text-gray-900 break-words">{formatValue(value)}</div>
+  <div className="flex gap-4">
+    <div className="w-56 font-medium text-gray-900">{label}</div>
+    <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
   </div>
 );
 
 const RowLight = ({ label, value }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-1 sm:gap-4">
-    <div className="text-gray-900">{label}</div>
-    <div className="text-gray-900 break-words">{formatValue(value)}</div>
+  <div className="flex gap-4">
+    <div className="w-56 text-gray-900">{label}</div>
+    <div className="flex-1 text-gray-900 break-words">{formatValue(value)}</div>
   </div>
 );
 
@@ -40,10 +40,9 @@ const DynamiekregelDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Modal animatie state
-  const [showJsonModal, setShowJsonModal] = useState(false);
-  const [jsonModalMounted, setJsonModalMounted] = useState(false);
-
+  // Modal state met animaties
+  const [showJsonModal, setShowJsonModal] = useState(false); // in DOM
+  const [jsonModalMounted, setJsonModalMounted] = useState(false); // anim in
   const [copied, setCopied] = useState(false);
 
   const fetchDetail = async () => {
@@ -56,7 +55,9 @@ const DynamiekregelDetail = () => {
         headers: { 'Cache-Control': 'no-store', ...getAuthHeader() },
       });
 
-      if (!res.ok) throw new Error(`Failed to fetch details (status ${res.status})`);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch details (status ${res.status})`);
+      }
 
       const data = await res.json();
       setDetail(Array.isArray(data) ? data[0] : data);
@@ -70,19 +71,29 @@ const DynamiekregelDetail = () => {
 
   useEffect(() => {
     if (regelId) fetchDetail();
+
+    const handleEnvChange = () => {
+      if (regelId) fetchDetail();
+    };
+    window.addEventListener('apiEnvChange', handleEnvChange);
+    return () => window.removeEventListener('apiEnvChange', handleEnvChange);
   }, [regelId]);
 
   const vm = useMemo(() => {
     if (!detail) return null;
+
     const bron = detail.Bron || {};
+
     return {
       omschrijving: detail.Omschrijving,
       afdBranchecode: detail.AfdBrancheCodeId,
       herkomst: detail.Herkomst,
+
       bronEntiteit: bron.EntiteitcodeId,
       bronAfdDekking: bron.AfdDekingcode ?? bron.AfdDekkingcode,
       bronAttribuut: bron.AttribuutcodeId,
-      rekenregels: detail.Rekenregels || [],
+
+      rekenregels: Array.isArray(detail.Rekenregels) ? detail.Rekenregels : [],
       gevolg: detail.Gevolg,
     };
   }, [detail]);
@@ -94,16 +105,20 @@ const DynamiekregelDetail = () => {
 
   const closeJsonModal = () => {
     setJsonModalMounted(false);
-    setTimeout(() => setShowJsonModal(false), 180);
+    window.setTimeout(() => {
+      setShowJsonModal(false);
+      setCopied(false);
+    }, 180);
   };
 
   const copyJson = async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      window.setTimeout(() => setCopied(false), 1400);
     } catch {
-      // stil falen is prima hier
+      // Niets forceren; in sommige browsers/contexts kan clipboard blokkeren.
+      setCopied(false);
     }
   };
 
@@ -112,24 +127,37 @@ const DynamiekregelDetail = () => {
       <TopNav />
 
       <div className="max-w-4xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                const listState = location.state?.listState;
+                if (listState) {
+                  navigate('/dynamiekregels', { state: { listState } });
+                } else {
+                  navigate(-1);
+                }
+              }}
               className={[baseBtn, inactiveBtn, 'flex items-center gap-2'].join(' ')}
             >
               <ArrowLeft className="w-4 h-4" />
               Terug
             </button>
+
             <h1 className="text-2xl font-semibold text-gray-900">Dynamiekregel {regelId}</h1>
           </div>
 
-          <div className="flex gap-2">
+          {/* Right aligned buttons */}
+          <div className="flex items-center gap-2">
             <button
               onClick={fetchDetail}
               disabled={loading}
-              className={[baseBtn, activeBtn, 'flex items-center gap-2'].join(' ')}
+              className={[
+                baseBtn,
+                activeBtn,
+                'flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed',
+              ].join(' ')}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -142,69 +170,140 @@ const DynamiekregelDetail = () => {
         </div>
 
         <div className="rounded-2xl brand-card border border-gray-200 p-6">
-          {error && <div className="text-sm text-red-600">{error}</div>}
-
-          {vm && (
-            <>
-              <div className="mb-6">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-b-2 border-red-600 rounded-full" />
+            </div>
+          ) : error ? (
+            <div className="flex gap-3 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <AlertCircle className="w-5 h-5" />
+              <div>
+                <p className="text-sm font-medium">Kon details niet laden</p>
+                <p className="text-xs">{error}</p>
+              </div>
+            </div>
+          ) : !vm ? (
+            <p className="text-sm text-gray-600">Geen details gevonden.</p>
+          ) : (
+            <div className="space-y-6">
+              <div>
                 <div className="text-sm text-gray-500">Omschrijving</div>
-                <div className="text-lg">{vm.omschrijving}</div>
+                <div className="text-lg text-gray-900">{vm.omschrijving}</div>
               </div>
 
-              <div className="text-sm text-gray-500 mb-1">Inhoud</div>
-              <div className="text-sm space-y-5 rounded-xl border border-gray-200 bg-gray-50/70 p-5">
-                <Row label="AFD-branchecode" value={vm.afdBranchecode} />
-                <Row label="Herkomst" value={vm.herkomst} />
+              <div>
+                <div className="text-sm text-gray-500">Inhoud</div>
 
-                <div>
-                  <div className="font-medium">Bron</div>
-                  <div className="ml-6 space-y-2">
-                    <RowLight label="Entiteitcode" value={vm.bronEntiteit} />
-                    <RowLight label="AFD-dekkingcode" value={vm.bronAfdDekking} />
-                    <RowLight label="Attribuutcode" value={vm.bronAttribuut} />
+                {/* 1 punt kleiner, inhoud ongewijzigd */}
+                <div className="mt-2 space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+                  <Row label="AFD-branchecode" value={vm.afdBranchecode} />
+                  <Row label="Herkomst" value={vm.herkomst} />
+
+                  <div>
+                    <div className="font-medium text-gray-900">Bron</div>
+                    <div className="mt-2 ml-6 space-y-3">
+                      <RowLight label="Entiteitcode" value={vm.bronEntiteit} />
+                      <RowLight label="AFD-dekkingcode" value={vm.bronAfdDekking} />
+                      <RowLight label="Attribuutcode" value={vm.bronAttribuut} />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="font-medium text-gray-900">Rekenregels</div>
+
+                    <div className="mt-3 space-y-3">
+                      {vm.rekenregels.map((rr, idx) => {
+                        const doel = rr.Doel || {};
+                        return (
+                          <div key={idx} className="rounded-lg border border-gray-200 bg-white/70 p-4 space-y-3">
+                            <div className="font-medium text-gray-900">Rekenregel {idx + 1}</div>
+
+                            <div className="ml-6 space-y-3">
+                              <RowLight label="Operator" value={rr.Operator} />
+                              <RowLight label="Waarde" value={rr.Waarde} />
+                            </div>
+
+                            <div className="pt-3 border-t border-gray-200">
+                              <div className="font-medium text-gray-900">Doel</div>
+                              <div className="mt-2 ml-6 space-y-3">
+                                <RowLight label="Entiteitcode" value={doel.EntiteitcodeId} />
+                                <RowLight
+                                  label="AFD-dekkingcode"
+                                  value={doel.AfdDekingcode ?? doel.AfdDekkingcode}
+                                />
+                                <RowLight label="Attribuutcode" value={doel.AttribuutcodeId} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-200">
+                    <Row label="Gevolg" value={vm.gevolg} />
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      {/* JSON MODAL */}
+      {/* JSON Modal */}
       {showJsonModal && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${
-            jsonModalMounted ? 'opacity-100' : 'opacity-0'
-          }`}
-          onMouseDown={(e) => e.target === e.currentTarget && closeJsonModal()}
+          className={[
+            'fixed inset-0 z-50 flex items-center justify-center p-4',
+            'transition-opacity duration-200',
+            jsonModalMounted ? 'opacity-100' : 'opacity-0',
+          ].join(' ')}
+          // Klik naast popup sluit (backdrop click)
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeJsonModal();
+          }}
         >
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
-
+          {/* Backdrop */}
           <div
-            className={`relative w-full max-w-3xl bg-white rounded-2xl border border-gray-200 shadow-2xl transition-transform duration-200 ${
-              jsonModalMounted ? 'scale-100 translate-y-0' : 'scale-95 translate-y-2'
-            }`}
+            className={[
+              'absolute inset-0',
+              'bg-black/50',
+              'backdrop-blur-[2px]',
+              'transition-opacity duration-200',
+              jsonModalMounted ? 'opacity-100' : 'opacity-0',
+            ].join(' ')}
+          />
+
+          {/* Panel */}
+          <div
+            className={[
+              'relative w-full max-w-3xl',
+              'rounded-2xl border border-gray-200 brand-modal bg-white shadow-2xl',
+              'transition-transform duration-200',
+              jsonModalMounted ? 'translate-y-0 scale-100' : 'translate-y-2 scale-[0.98]',
+            ].join(' ')}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b">
-              <p className="text-sm font-medium">Volledige JSON</p>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-600" />
+                <p className="text-sm font-medium text-gray-900">Volledige JSON</p>
+              </div>
 
-              <button
-                onClick={copyJson}
-                className={[baseBtn, activeBtn, 'flex items-center gap-2'].join(' ')}
-              >
+              {/* Op plek van kruisje: Kopieer knop, zelfde stijl als Refresh */}
+              <button onClick={copyJson} className={[baseBtn, activeBtn, 'flex items-center gap-2'].join(' ')}>
                 <Copy className="w-4 h-4" />
                 {copied ? 'Gekopieerd' : 'Kopieer JSON'}
               </button>
             </div>
 
             <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
-              <pre className="text-sm font-sans whitespace-pre-wrap break-words">
+              <pre className="text-sm font-sans whitespace-pre-wrap break-words text-gray-900 leading-relaxed">
                 {JSON.stringify(detail, null, 2)}
               </pre>
             </div>
 
-            <div className="px-5 py-4 border-t flex justify-end">
+            <div className="px-5 py-4 border-t border-gray-200 flex justify-end">
               <button onClick={closeJsonModal} className={[baseBtn, inactiveBtn].join(' ')}>
                 Sluiten
               </button>

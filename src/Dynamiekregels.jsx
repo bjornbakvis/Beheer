@@ -1,6 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { RefreshCw, ChevronLeft, ChevronRight, AlertCircle, X, Pencil, Info } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { authFetch } from './apiAuth';
@@ -11,76 +20,77 @@ const baseBtn =
 const inactiveBtn = 'brand-outline hover:bg-red-50';
 const activeBtn = 'brand-primary text-white border-transparent shadow-sm';
 
+const makeUuid = () => (crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10));
+
+const emptyEntiteit = () => ({
+  EntiteitcodeId: '',
+  AfdDekkingcode: '',
+  AttribuutcodeId: '',
+  RubriekId: '',
+});
+
+const emptyRekenregelCreate = () => ({
+  _id: makeUuid(),
+  Operator: 'NotSet',
+  Waarde: '',
+  Doel: emptyEntiteit(),
+});
+
+const emptyRekenregelEdit = () => ({
+  _id: makeUuid(),
+  _isNew: true,
+  _deleted: false,
+  RekenregelId: 0,
+  Operator: 'NotSet',
+  Waarde: '',
+  Doel: emptyEntiteit(),
+});
+
 const Dynamiekregels = () => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortKey, setSortKey] = useState('regelId'); // regelId | externNummer | omschrijving
+  const [sortKey, setSortKey] = useState('regelId'); // regelId | omschrijving
   const [sortDir, setSortDir] = useState('asc'); // asc | desc
+
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+
+  // Create modal
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    omschrijving: '',
-    expressie: '',
-    afdBrancheCode: '',
-  });
-  const [createError, setCreateError] = useState(null);
   const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createError, setCreateError] = useState(null);
+  const [createForm, setCreateForm] = useState(() => ({
+    omschrijving: '',
+    afdBrancheCodeId: '',
+    gevolg: 'NotSet',
+    bron: emptyEntiteit(),
+    rekenregels: [emptyRekenregelCreate()],
+  }));
+
+  // Edit modal
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editRuleId, setEditRuleId] = useState(null);
-  const [editOmschrijving, setEditOmschrijving] = useState('');
-  const [editExpressie, setEditExpressie] = useState('');
-  const [editError, setEditError] = useState(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState(null);
+  const [editRuleId, setEditRuleId] = useState(null);
+  const [editForm, setEditForm] = useState(() => ({
+    regelId: '',
+    omschrijving: '',
+    afdBrancheCodeId: '',
+    gevolg: 'NotSet',
+    resourceId: '',
+    bron: emptyEntiteit(),
+    rekenregels: [emptyRekenregelEdit()],
+  }));
+  const [originalEditSnapshot, setOriginalEditSnapshot] = useState(null);
+
   const rulesPerPage = 10;
 
   const navigate = useNavigate();
   const location = useLocation();
   const restoredListRef = useRef(false);
-
-  const makeId = () =>
-    crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10);
-
-  const createEmptyCondition = () => ({
-    id: makeId(),
-    operator: '=',
-    value: '',
-    joiner: 'and',
-  });
-
-  const createEmptyRecord = () => ({
-    id: makeId(),
-    rubriek: '',
-    joiner: 'and',
-    conditions: [createEmptyCondition()],
-  });
-
-  const [xpathBuilder, setXpathBuilder] = useState(() => ({
-    records: [createEmptyRecord()],
-  }));
-
-  const [builderError, setBuilderError] = useState(null);
-
-  const operatorOptions = [
-    { value: '=', label: '=' },
-    { value: '!=', label: '!=' },
-    { value: '>', label: '>' },
-    { value: '<', label: '<' },
-    { value: '>=', label: '>=' },
-    { value: '<=', label: '<=' },
-    { value: 'contains', label: 'contains' },
-    { value: 'not-contains', label: 'not contains' },
-    { value: 'starts-with', label: 'starts-with' },
-    { value: 'ends-with', label: 'ends-with' },
-  ];
-
-  const joinerOptions = [
-    { value: 'and', label: 'EN' },
-    { value: 'or', label: 'OF' },
-  ];
 
   // Normalize varying API shapes into the fields the table expects
   const normalizeRules = (incoming) => {
@@ -97,7 +107,6 @@ const Dynamiekregels = () => {
             regelId: item.regelId ?? item.RegelId ?? item.id ?? '',
             externNummer: item.externNummer ?? item.ExternNummer ?? '',
             omschrijving: item.omschrijving ?? item.Omschrijving ?? '',
-            expressie: item.expressie ?? item.Expressie ?? '',
           },
         ];
       });
@@ -121,12 +130,7 @@ const Dynamiekregels = () => {
       setRules(normalized);
     } catch (err) {
       setError(err.message);
-      // Demo data for illustration when API fails
-      setRules([
-        { regelId: 'R001', externNummer: 'EXT-2024-001', omschrijving: 'Leeftijdsgrens voor standaard verzekering' },
-        { regelId: 'R002', externNummer: 'EXT-2024-002', omschrijving: 'Medische keuring vereist boven drempelwaarde' },
-        { regelId: 'R003', externNummer: 'EXT-2024-003', omschrijving: 'Geografische beperking voor bepaalde gebieden' },
-      ]);
+      setRules([]);
     } finally {
       setLoading(false);
     }
@@ -175,19 +179,8 @@ const Dynamiekregels = () => {
         });
 
     const sorted = [...filtered].sort((a, b) => {
-      const av =
-        sortKey === 'regelId'
-          ? (a.regelId ?? '')
-          : sortKey === 'externNummer'
-            ? (a.externNummer ?? '')
-            : (a.omschrijving ?? '');
-
-      const bv =
-        sortKey === 'regelId'
-          ? (b.regelId ?? '')
-          : sortKey === 'externNummer'
-            ? (b.externNummer ?? '')
-            : (b.omschrijving ?? '');
+      const av = sortKey === 'regelId' ? (a.regelId ?? '') : (a.omschrijving ?? '');
+      const bv = sortKey === 'regelId' ? (b.regelId ?? '') : (b.omschrijving ?? '');
 
       const cmp = av.toString().localeCompare(bv.toString(), 'nl', {
         numeric: true,
@@ -213,19 +206,21 @@ const Dynamiekregels = () => {
     fetchRules();
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
   const handleDelete = async (regelId) => {
     if (!regelId) return;
     setDeletingId(regelId);
     setError(null);
 
     try {
-      const response = await authFetch(
-        withApiEnv(`/api/dynamiekregels?regelId=${encodeURIComponent(regelId)}`),
-        {
-          method: 'DELETE',
-          headers: { 'Cache-Control': 'no-store' },
-        }
-      );
+      const response = await authFetch(withApiEnv(`/api/dynamiekregels?regelId=${encodeURIComponent(regelId)}`), {
+        method: 'DELETE',
+        headers: { 'Cache-Control': 'no-store' },
+      });
 
       if (!response.ok) {
         let message = `Failed to delete dynamiekregel (status ${response.status})`;
@@ -245,201 +240,268 @@ const Dynamiekregels = () => {
     }
   };
 
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
+  // Alleen aanpassen mogelijk als RegelId >= 10000
+  const canEditRule = (rule) => {
+    const n = Number.parseInt((rule?.regelId ?? '').toString(), 10);
+    return Number.isFinite(n) && n >= 10000;
   };
 
-  const handleCreateInputChange = (field) => (event) => {
-    setCreateForm((prev) => ({ ...prev, [field]: event.target.value }));
+  const toNumberOrZero = (raw) => {
+    if (raw === null || raw === undefined) return 0;
+    const s = raw.toString().trim();
+    if (!s) return 0;
+    const n = Number.parseInt(s, 10);
+    return Number.isFinite(n) ? n : 0;
   };
 
-  const handleRecordUpdate = (recordId, updates) => {
-    setXpathBuilder((prev) => ({
-      ...prev,
-      records: prev.records.map((record) => (record.id === recordId ? { ...record, ...updates } : record)),
-    }));
-    setBuilderError(null);
-  };
+  const cleanEntiteit = (e) => ({
+    EntiteitcodeId: (e?.EntiteitcodeId ?? '').toString(),
+    AfdDekkingcode: (e?.AfdDekkingcode ?? '').toString(),
+    AttribuutcodeId: (e?.AttribuutcodeId ?? '').toString(),
+    RubriekId: toNumberOrZero(e?.RubriekId ?? ''),
+  });
 
-  const handleConditionUpdate = (recordId, conditionId, updates) => {
-    setXpathBuilder((prev) => ({
-      ...prev,
-      records: prev.records.map((record) => {
-        if (record.id !== recordId) return record;
-        return {
-          ...record,
-          conditions: record.conditions.map((condition) =>
-            condition.id === conditionId ? { ...condition, ...updates } : condition
-          ),
-        };
-      }),
-    }));
-    setBuilderError(null);
-  };
-
-  const handleAddCondition = (recordId) => {
-    setXpathBuilder((prev) => ({
-      ...prev,
-      records: prev.records.map((record) =>
-        record.id === recordId ? { ...record, conditions: [...record.conditions, createEmptyCondition()] } : record
-      ),
-    }));
-    setBuilderError(null);
-  };
-
-  const handleRemoveCondition = (recordId, conditionId) => {
-    setXpathBuilder((prev) => ({
-      ...prev,
-      records: prev.records.map((record) => {
-        if (record.id !== recordId) return record;
-        const remaining = record.conditions.filter((condition) => condition.id !== conditionId);
-        return { ...record, conditions: remaining.length ? remaining : [createEmptyCondition()] };
-      }),
-    }));
-    setBuilderError(null);
-  };
-
-  const handleAddRecord = () => {
-    setXpathBuilder((prev) => ({ ...prev, records: [...prev.records, createEmptyRecord()] }));
-    setBuilderError(null);
-  };
-
-  const handleRemoveRecord = (recordId) => {
-    setXpathBuilder((prev) => {
-      const remaining = prev.records.filter((record) => record.id !== recordId);
-      return { ...prev, records: remaining.length ? remaining : [createEmptyRecord()] };
+  const openCreateModal = () => {
+    setCreateError(null);
+    setCreateSubmitting(false);
+    setCreateForm({
+      omschrijving: '',
+      afdBrancheCodeId: '',
+      gevolg: 'NotSet',
+      bron: emptyEntiteit(),
+      rekenregels: [emptyRekenregelCreate()],
     });
-    setBuilderError(null);
+    setShowCreateModal(true);
   };
 
-  const normalizeJoiner = (joiner) => (joiner === 'or' ? 'or' : 'and');
-  const isNumericValue = (value) => /^-?\d+$/.test(value);
+  const buildCreatePayload = () => {
+    const afd = toNumberOrZero(createForm.afdBrancheCodeId);
 
-  const buildXPathLiteral = (rawValue) => {
-    if (!rawValue.includes("'")) return `'${rawValue}'`;
-    if (!rawValue.includes('"')) return `"${rawValue}"`;
-    const parts = rawValue.split("'");
-    const wrapped = parts.map((part) => (part ? `'${part}'` : "''"));
-    return `concat(${wrapped.join(',\"\'\",')})`;
+    return {
+      Omschrijving: createForm.omschrijving.trim(),
+      AfdBrancheCodeId: afd,
+      Bron: cleanEntiteit(createForm.bron),
+      Gevolg: (createForm.gevolg ?? 'NotSet').toString(),
+      ResourceId: makeUuid(),
+      Rekenregels: (createForm.rekenregels || []).map((r) => ({
+        Operator: (r.Operator ?? 'NotSet').toString(),
+        Waarde: (r.Waarde ?? '').toString(),
+        Doel: cleanEntiteit(r.Doel),
+      })),
+    };
   };
 
-  const buildConditionExpression = (rubriek, condition) => {
-    const value = condition.value.trim();
-    if (!value) return null;
+  const handleCreateSubmit = async (event) => {
+    event.preventDefault();
+    setCreateError(null);
 
-    const fieldPath = `//${rubriek}`;
-    const fieldLower = `lower-case(${fieldPath})`;
-    const valueLiteral = buildXPathLiteral(value);
-    const valueLower = `lower-case(${valueLiteral})`;
-
-    const numericOperators = ['>', '<', '>=', '<='];
-    if (numericOperators.includes(condition.operator) && isNumericValue(value)) {
-      return `number(${fieldPath}) ${condition.operator} ${value}`;
-    }
-
-    switch (condition.operator) {
-      case '=':
-        return `${fieldLower} = ${valueLower}`;
-      case '!=':
-        return `${fieldLower} != ${valueLower}`;
-      case 'contains':
-        return `contains(${fieldLower},${valueLower})`;
-      case 'not-contains':
-        return `not(contains(${fieldLower},${valueLower}))`;
-      case 'starts-with':
-        return `starts-with(${fieldLower},${valueLower})`;
-      case 'ends-with':
-        return `ends-with(${fieldLower},${valueLower})`;
-      case '>':
-      case '<':
-      case '>=':
-      case '<=':
-        return `${fieldLower} ${condition.operator} ${valueLower}`;
-      default:
-        return `${fieldLower} = ${valueLower}`;
-    }
-  };
-
-  const buildRecordExpression = (record) => {
-    const rubriek = record.rubriek.trim();
-    if (!rubriek) return null;
-
-    const conditionExpressions = record.conditions
-      .map((condition) => buildConditionExpression(rubriek, condition))
-      .filter(Boolean);
-
-    if (conditionExpressions.length === 0) return null;
-
-    let combined = conditionExpressions[0];
-    for (let i = 1; i < conditionExpressions.length; i += 1) {
-      const joiner = normalizeJoiner(record.conditions[i].joiner);
-      combined = `${combined} ${joiner} ${conditionExpressions[i]}`;
-    }
-
-    const conditionBlock = conditionExpressions.length > 1 ? `((${combined}))` : `(${combined})`;
-    return `(fn:exists(//${rubriek}) and ${conditionBlock})`;
-  };
-
-  const buildXPathExpression = (records) => {
-    const recordExpressions = records
-      .map((record) => ({ expr: buildRecordExpression(record), joiner: normalizeJoiner(record.joiner) }))
-      .filter((record) => record.expr);
-
-    if (recordExpressions.length === 0) return '';
-
-    let combined = recordExpressions[0].expr;
-    for (let i = 1; i < recordExpressions.length; i += 1) {
-      combined = `${combined} ${recordExpressions[i].joiner} ${recordExpressions[i].expr}`;
-    }
-
-    return `if(( ${combined} )) then false() else true()`;
-  };
-
-  const handleApplyBuilder = () => {
-    const expression = buildXPathExpression(xpathBuilder.records);
-    if (!expression) {
-      setBuilderError('Vul minimaal een rubriek en waarde in.');
+    const omschrijving = createForm.omschrijving.trim();
+    if (!omschrijving) {
+      setCreateError('Omschrijving is verplicht.');
       return;
     }
-    setCreateForm((prev) => ({ ...prev, expressie: expression }));
-    setBuilderError(null);
+    if (omschrijving.length > 200) {
+      setCreateError('Omschrijving mag maximaal 200 tekens bevatten.');
+      return;
+    }
+    const afd = toNumberOrZero(createForm.afdBrancheCodeId);
+    if (!afd) {
+      setCreateError('Afd branchecode moet een geheel getal zijn.');
+      return;
+    }
+
+    setCreateSubmitting(true);
+    try {
+      const payload = buildCreatePayload();
+
+      const response = await authFetch(withApiEnv('/api/dynamiekregels'), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        let message = `Failed to create dynamiekregel (status ${response.status})`;
+        try {
+          const payloadError = await response.json();
+          message = payloadError.message || payloadError.error || message;
+        } catch (_) {}
+        throw new Error(message);
+      }
+
+      setShowCreateModal(false);
+      setCurrentPage(1);
+      fetchRules();
+    } catch (err) {
+      setCreateError(err.message);
+    } finally {
+      setCreateSubmitting(false);
+    }
   };
 
-  const openEditModal = (regelId, omschrijvingValue, expressieValue) => {
-    setEditRuleId(regelId);
-    setEditOmschrijving(omschrijvingValue || '');
-    setEditExpressie(expressieValue || '');
+  const snapshotRekenregel = (r) => {
+    const doel = r?.Doel || {};
+    return {
+      RekenregelId: r?.RekenregelId ?? 0,
+      Operator: (r?.Operator ?? '').toString(),
+      Waarde: (r?.Waarde ?? '').toString(),
+      Doel: {
+        EntiteitcodeId: (doel?.EntiteitcodeId ?? '').toString(),
+        AfdDekkingcode: (doel?.AfdDekkingcode ?? doel?.AfdDekingcode ?? '').toString(),
+        AttribuutcodeId: (doel?.AttribuutcodeId ?? '').toString(),
+        RubriekId: toNumberOrZero(doel?.RubriekId ?? 0),
+      },
+    };
+  };
+
+  const sameRekenregel = (a, b) => {
+    if (!a || !b) return false;
+    if ((a.Operator ?? '') !== (b.Operator ?? '')) return false;
+    if ((a.Waarde ?? '') !== (b.Waarde ?? '')) return false;
+    const ad = a.Doel || {};
+    const bd = b.Doel || {};
+    return (
+      (ad.EntiteitcodeId ?? '') === (bd.EntiteitcodeId ?? '') &&
+      (ad.AfdDekkingcode ?? '') === (bd.AfdDekkingcode ?? '') &&
+      (ad.AttribuutcodeId ?? '') === (bd.AttribuutcodeId ?? '') &&
+      toNumberOrZero(ad.RubriekId ?? 0) === toNumberOrZero(bd.RubriekId ?? 0)
+    );
+  };
+
+  const openEditModal = async (regelId) => {
+    if (!regelId) return;
     setEditError(null);
-    setShowEditModal(true);
+    setEditSubmitting(false);
+    setEditRuleId(regelId);
+
+    try {
+      const response = await authFetch(withApiEnv(`/api/dynamiekregels?regelId=${encodeURIComponent(regelId)}`));
+      if (!response.ok) throw new Error('Failed to fetch dynamiekregel detail');
+      const data = await response.json();
+
+      const bron = data.Bron || {};
+      const mappedBron = {
+        EntiteitcodeId: (bron.EntiteitcodeId ?? '').toString(),
+        AfdDekkingcode: (bron.AfdDekkingcode ?? bron.AfdDekingcode ?? '').toString(),
+        AttribuutcodeId: (bron.AttribuutcodeId ?? '').toString(),
+        RubriekId: (bron.RubriekId ?? '').toString(),
+      };
+
+      const rekenregels = Array.isArray(data.Rekenregels) ? data.Rekenregels : [];
+      const mappedRekenregels = (rekenregels.length ? rekenregels : [{}]).map((r) => ({
+        _id: makeUuid(),
+        _isNew: false,
+        _deleted: false,
+        RekenregelId: r.RekenregelId ?? 0,
+        Operator: r.Operator ?? 'NotSet',
+        Waarde: r.Waarde ?? '',
+        Doel: {
+          EntiteitcodeId: (r?.Doel?.EntiteitcodeId ?? '').toString(),
+          AfdDekkingcode: (r?.Doel?.AfdDekkingcode ?? r?.Doel?.AfdDekingcode ?? '').toString(),
+          AttribuutcodeId: (r?.Doel?.AttribuutcodeId ?? '').toString(),
+          RubriekId: (r?.Doel?.RubriekId ?? '').toString(),
+        },
+      }));
+
+      const snapshot = {
+        RegelId: data.RegelId,
+        Omschrijving: (data.Omschrijving ?? '').toString(),
+        AfdBrancheCodeId: data.AfdBrancheCodeId,
+        Gevolg: (data.Gevolg ?? 'NotSet').toString(),
+        ResourceId: (data.ResourceId ?? '').toString(),
+        Bron: cleanEntiteit(mappedBron),
+        Rekenregels: mappedRekenregels.map((rr) => snapshotRekenregel(rr)),
+      };
+
+      setOriginalEditSnapshot(snapshot);
+
+      setEditForm({
+        regelId: (data.RegelId ?? '').toString(),
+        omschrijving: (data.Omschrijving ?? '').toString(),
+        afdBrancheCodeId: (data.AfdBrancheCodeId ?? '').toString(),
+        gevolg: (data.Gevolg ?? 'NotSet').toString(),
+        resourceId: (data.ResourceId ?? '').toString(),
+        bron: mappedBron,
+        rekenregels: mappedRekenregels,
+      });
+
+      setShowEditModal(true);
+    } catch (err) {
+      setEditError(err.message);
+      setShowEditModal(true);
+    }
+  };
+
+  const buildUpdatePayload = () => {
+    const afd = toNumberOrZero(editForm.afdBrancheCodeId);
+    const regelIdNum = toNumberOrZero(editForm.regelId);
+    const resourceId = editForm.resourceId?.trim() ? editForm.resourceId.trim() : makeUuid();
+
+    const originalById = new Map(
+      (originalEditSnapshot?.Rekenregels || []).map((rr) => [toNumberOrZero(rr.RekenregelId), rr])
+    );
+
+    const rekenregels = (editForm.rekenregels || []).map((r) => {
+      const idNum = toNumberOrZero(r.RekenregelId);
+      const isDeleted = !!r._deleted;
+      const isNew = !!r._isNew || idNum === 0;
+
+      const currentSnap = snapshotRekenregel(r);
+      const originalSnap = originalById.get(idNum);
+
+      let actie = 'NotSet';
+      if (isDeleted) actie = 'Verwijderen';
+      else if (isNew) actie = 'Toevoegen';
+      else if (originalSnap && !sameRekenregel(currentSnap, originalSnap)) actie = 'Wijzigen';
+
+      return {
+        Actie: actie,
+        RekenregelId: idNum,
+        Operator: (r.Operator ?? 'NotSet').toString(),
+        Waarde: (r.Waarde ?? '').toString(),
+        Doel: cleanEntiteit(r.Doel),
+      };
+    });
+
+    return {
+      RegelId: regelIdNum,
+      Omschrijving: editForm.omschrijving.trim(),
+      AfdBrancheCodeId: afd,
+      Bron: cleanEntiteit(editForm.bron),
+      Gevolg: (editForm.gevolg ?? 'NotSet').toString(),
+      ResourceId: resourceId,
+      Rekenregels: rekenregels,
+    };
   };
 
   const handleEditSubmit = async (event) => {
     event.preventDefault();
     setEditError(null);
 
-    if (!editRuleId) {
+    const regelIdNum = toNumberOrZero(editForm.regelId);
+    if (!regelIdNum) {
       setEditError('RegelId ontbreekt.');
       return;
     }
-    if (!editOmschrijving.trim()) {
+
+    const omschrijving = editForm.omschrijving.trim();
+    if (!omschrijving) {
       setEditError('Omschrijving is verplicht.');
       return;
     }
-    if (!editExpressie.trim()) {
-      setEditError('Xpath expressie is verplicht.');
+
+    const afd = toNumberOrZero(editForm.afdBrancheCodeId);
+    if (!afd) {
+      setEditError('Afd branchecode moet een geheel getal zijn.');
       return;
     }
 
     setEditSubmitting(true);
     try {
-      const resourceId = crypto?.randomUUID ? crypto.randomUUID() : undefined;
-      const payload = {
-        RegelId: editRuleId,
-        Omschrijving: editOmschrijving.trim(),
-        Expressie: editExpressie.trim(),
-        ResourceId: resourceId,
-      };
+      const payload = buildUpdatePayload();
 
       const response = await authFetch(withApiEnv('/api/dynamiekregels'), {
         method: 'PUT',
@@ -461,8 +523,7 @@ const Dynamiekregels = () => {
 
       setShowEditModal(false);
       setEditRuleId(null);
-      setEditOmschrijving('');
-      setEditExpressie('');
+      setOriginalEditSnapshot(null);
       fetchRules();
     } catch (err) {
       setEditError(err.message);
@@ -471,77 +532,222 @@ const Dynamiekregels = () => {
     }
   };
 
-  const handleCreateSubmit = async (event) => {
-    event.preventDefault();
-    setCreateError(null);
-
-    const omschrijving = createForm.omschrijving.trim();
-    const expressie = createForm.expressie.trim();
-    const afdCodeRaw = createForm.afdBrancheCode.trim();
-    const afdCode = Number.parseInt(afdCodeRaw, 10);
-
-    if (!omschrijving) {
-      setCreateError('Omschrijving is verplicht.');
-      return;
-    }
-    if (omschrijving.length > 200) {
-      setCreateError('Omschrijving mag maximaal 200 tekens bevatten.');
-      return;
-    }
-    if (!expressie) {
-      setCreateError('Xpath Expressie is verplicht.');
-      return;
-    }
-    if (!afdCodeRaw || Number.isNaN(afdCode)) {
-      setCreateError('Afd branchecode moet een geheel getal zijn.');
-      return;
-    }
-
-    setCreateSubmitting(true);
-    try {
-      const resourceId = crypto?.randomUUID ? crypto.randomUUID() : undefined;
-      const payload = {
-        AfdBrancheCodeId: afdCode,
-        Omschrijving: omschrijving,
-        Expressie: expressie,
-        ResourceId: resourceId,
-      };
-
-      const response = await authFetch(withApiEnv('/api/dynamiekregels'), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        let message = `Failed to create dynamiekregel (status ${response.status})`;
-        try {
-          const payloadError = await response.json();
-          message = payloadError.message || payloadError.error || message;
-        } catch (_) {}
-        throw new Error(message);
-      }
-
-      setShowCreateModal(false);
-      setCreateForm({ omschrijving: '', expressie: '', afdBrancheCode: '' });
-      setXpathBuilder({ records: [createEmptyRecord()] });
-      setBuilderError(null);
-      setCurrentPage(1);
-      fetchRules();
-    } catch (err) {
-      setCreateError(err.message);
-    } finally {
-      setCreateSubmitting(false);
-    }
+  const updateCreateRekenregel = (id, patch) => {
+    setCreateForm((prev) => ({
+      ...prev,
+      rekenregels: prev.rekenregels.map((r) => (r._id === id ? { ...r, ...patch } : r)),
+    }));
   };
 
-  // Alleen aanpassen mogelijk als RegelId >= 10000
-  const canEditRule = (rule) => {
-    const n = Number.parseInt((rule?.regelId ?? '').toString(), 10);
-    return Number.isFinite(n) && n >= 10000;
+  const updateEditRekenregel = (id, patch) => {
+    setEditForm((prev) => ({
+      ...prev,
+      rekenregels: prev.rekenregels.map((r) => (r._id === id ? { ...r, ...patch } : r)),
+    }));
+  };
+
+  const updateCreateDoel = (id, patch) => {
+    updateCreateRekenregel(id, { Doel: { ...(createForm.rekenregels.find((r) => r._id === id)?.Doel || {}), ...patch } });
+  };
+
+  const updateEditDoel = (id, patch) => {
+    updateEditRekenregel(id, { Doel: { ...(editForm.rekenregels.find((r) => r._id === id)?.Doel || {}), ...patch } });
+  };
+
+  const removeCreateRekenregel = (id) => {
+    setCreateForm((prev) => {
+      const remaining = prev.rekenregels.filter((r) => r._id !== id);
+      return { ...prev, rekenregels: remaining.length ? remaining : [emptyRekenregelCreate()] };
+    });
+  };
+
+  const removeEditRekenregel = (id) => {
+    setEditForm((prev) => {
+      const item = prev.rekenregels.find((r) => r._id === id);
+      if (!item) return prev;
+      // Existing rekenregel: mark for delete
+      if (!item._isNew && toNumberOrZero(item.RekenregelId) > 0) {
+        return {
+          ...prev,
+          rekenregels: prev.rekenregels.map((r) => (r._id === id ? { ...r, _deleted: true } : r)),
+        };
+      }
+      // New rekenregel: remove from list
+      const remaining = prev.rekenregels.filter((r) => r._id !== id);
+      return { ...prev, rekenregels: remaining.length ? remaining : [emptyRekenregelEdit()] };
+    });
+  };
+
+  const restoreEditRekenregel = (id) => {
+    setEditForm((prev) => ({
+      ...prev,
+      rekenregels: prev.rekenregels.map((r) => (r._id === id ? { ...r, _deleted: false } : r)),
+    }));
+  };
+
+  const renderEntiteitFields = (value, onChange, prefixId) => (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-entiteit`}>
+          Entiteitcode
+        </label>
+        <input
+          id={`${prefixId}-entiteit`}
+          type="text"
+          value={value.EntiteitcodeId}
+          onChange={(e) => onChange({ EntiteitcodeId: e.target.value })}
+          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-dekking`}>
+          AFD-dekkingcode
+        </label>
+        <input
+          id={`${prefixId}-dekking`}
+          type="text"
+          value={value.AfdDekkingcode}
+          onChange={(e) => onChange({ AfdDekkingcode: e.target.value })}
+          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-attribuut`}>
+          Attribuutcode
+        </label>
+        <input
+          id={`${prefixId}-attribuut`}
+          type="text"
+          value={value.AttribuutcodeId}
+          onChange={(e) => onChange({ AttribuutcodeId: e.target.value })}
+          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-rubriek`}>
+          RubriekId
+        </label>
+        <input
+          id={`${prefixId}-rubriek`}
+          type="number"
+          value={value.RubriekId}
+          onChange={(e) => onChange({ RubriekId: e.target.value })}
+          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+        />
+      </div>
+    </div>
+  );
+
+  const renderRekenregels = (items, mode) => {
+    const isEdit = mode === 'edit';
+
+    return (
+      <div className="space-y-3">
+        {items.map((r, idx) => {
+          const deleted = !!r._deleted;
+          return (
+            <div
+              key={r._id}
+              className={`rounded-xl border border-gray-200 p-4 bg-white/70 dark:border-slate-700 dark:bg-slate-900/40 ${
+                deleted ? 'opacity-60' : ''
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-100">
+                  Rekenregel {idx + 1}
+                  {deleted ? ' (verwijderen)' : ''}
+                </p>
+
+                <div className="flex items-center gap-2">
+                  {isEdit && deleted ? (
+                    <button
+                      type="button"
+                      onClick={() => restoreEditRekenregel(r._id)}
+                      className={[baseBtn, inactiveBtn, 'px-3 py-1.5 text-xs'].join(' ')}
+                    >
+                      Herstellen
+                    </button>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={() => (isEdit ? removeEditRekenregel(r._id) : removeCreateRekenregel(r._id))}
+                    className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    title="Verwijder rekenregel"
+                    aria-label="Verwijder rekenregel"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-slate-300">Operator</label>
+                  <input
+                    type="text"
+                    value={r.Operator}
+                    disabled={deleted}
+                    onChange={(e) =>
+                      isEdit
+                        ? updateEditRekenregel(r._id, { Operator: e.target.value })
+                        : updateCreateRekenregel(r._id, { Operator: e.target.value })
+                    }
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 disabled:opacity-60 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                    placeholder="Bijv. GelijkAan"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-slate-300">Waarde</label>
+                  <input
+                    type="text"
+                    value={r.Waarde}
+                    disabled={deleted}
+                    onChange={(e) =>
+                      isEdit
+                        ? updateEditRekenregel(r._id, { Waarde: e.target.value })
+                        : updateCreateRekenregel(r._id, { Waarde: e.target.value })
+                    }
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 disabled:opacity-60 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                    placeholder="Bijv. 15"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-gray-700 dark:text-slate-200">Doel</p>
+                <div className="mt-2">
+                  {renderEntiteitFields(
+                    r.Doel,
+                    (patch) => (isEdit ? updateEditDoel(r._id, patch) : updateCreateDoel(r._id, patch)),
+                    `${mode}-doel-${r._id}`
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        <div>
+          <button
+            type="button"
+            onClick={() =>
+              isEdit
+                ? setEditForm((prev) => ({ ...prev, rekenregels: [...prev.rekenregels, emptyRekenregelEdit()] }))
+                : setCreateForm((prev) => ({ ...prev, rekenregels: [...prev.rekenregels, emptyRekenregelCreate()] }))
+            }
+            className="inline-flex items-center gap-2 text-sm font-medium text-red-600 hover:opacity-90"
+          >
+            <Plus className="w-4 h-4" />
+            Rekenregel toevoegen
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -562,7 +768,7 @@ const Dynamiekregels = () => {
                   type="text"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  placeholder="Zoek op Regel ID of Omschrijving"
+                  placeholder="Zoek op Regel ID of Omschrijving (deelmatch)"
                   className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
 
@@ -580,7 +786,7 @@ const Dynamiekregels = () => {
                 </button>
 
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={openCreateModal}
                   className={[baseBtn, activeBtn, 'flex items-center justify-center gap-2'].join(' ')}
                 >
                   + Nieuwe regel
@@ -607,7 +813,7 @@ const Dynamiekregels = () => {
             ) : (
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: '104px' }} />
+                  <col style={{ width: '120px' }} />
                   <col />
                   <col style={{ width: '120px' }} />
                   <col style={{ width: '150px' }} />
@@ -703,7 +909,7 @@ const Dynamiekregels = () => {
                             {canEditRule(rule) ? (
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
+                                  onClick={() => openEditModal(rule.regelId)}
                                   className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                                   title="Bewerk dynamiekregel"
                                   aria-label={`Bewerk dynamiekregel ${rule.regelId}`}
@@ -722,7 +928,10 @@ const Dynamiekregels = () => {
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-400" title="Alleen regels met Regel ID vanaf 10000 zijn aanpasbaar">
+                              <span
+                                className="text-xs text-gray-400"
+                                title="Alleen regels met Regel ID vanaf 10000 zijn aanpasbaar"
+                              >
                                 —
                               </span>
                             )}
@@ -744,11 +953,9 @@ const Dynamiekregels = () => {
                 <button
                   onClick={() => handlePageChange(safePage - 1)}
                   disabled={safePage === 1}
-                  className={[
-                    baseBtn,
-                    inactiveBtn,
-                    'px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed',
-                  ].join(' ')}
+                  className={[baseBtn, inactiveBtn, 'px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed'].join(
+                    ' '
+                  )}
                   aria-label="Vorige pagina"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -788,11 +995,9 @@ const Dynamiekregels = () => {
                 <button
                   onClick={() => handlePageChange(safePage + 1)}
                   disabled={safePage === totalPages}
-                  className={[
-                    baseBtn,
-                    inactiveBtn,
-                    'px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed',
-                  ].join(' ')}
+                  className={[baseBtn, inactiveBtn, 'px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed'].join(
+                    ' '
+                  )}
                   aria-label="Volgende pagina"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -828,7 +1033,7 @@ const Dynamiekregels = () => {
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-gray-200 brand-modal">
+          <div className="w-full max-w-3xl rounded-2xl border border-gray-200 brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Nieuwe dynamiekregel</p>
               <button
@@ -840,211 +1045,66 @@ const Dynamiekregels = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateSubmit} className="px-5 py-4 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleCreateSubmit} className="px-5 py-4 space-y-5 max-h-[75vh] overflow-y-auto">
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="omschrijving">
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="create-omschrijving">
                   Omschrijving
                 </label>
                 <input
-                  id="omschrijving"
+                  id="create-omschrijving"
                   type="text"
                   maxLength={200}
                   value={createForm.omschrijving}
-                  onChange={handleCreateInputChange('omschrijving')}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, omschrijving: e.target.value }))}
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="expressie">
-                  Xpath Expressie
-                </label>
-                <textarea
-                  id="expressie"
-                  rows="4"
-                  value={createForm.expressie}
-                  onChange={handleCreateInputChange('expressie')}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                />
-              </div>
-
-              <div className="flex items-center gap-3 text-xs font-medium text-gray-400 uppercase tracking-widest">
-                <span className="flex-1 h-px bg-gray-200 dark:bg-slate-700"></span>
-                <span>---- OF ----</span>
-                <span className="flex-1 h-px bg-gray-200 dark:bg-slate-700"></span>
-              </div>
-
-              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4 space-y-4 dark:border-slate-700 dark:bg-slate-800/40">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-slate-100">Xpath builder</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400">
-                      Bouw de expressie met rubrieken en voorwaarden en vul de Xpath Expressie in.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleApplyBuilder}
-                    disabled={!buildXPathExpression(xpathBuilder.records)}
-                    className={[
-                      baseBtn,
-                      activeBtn,
-                      'text-xs px-3 py-2 disabled:opacity-60 disabled:cursor-not-allowed',
-                    ].join(' ')}
-                  >
-                    Vul Xpath Expressie
-                  </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="create-afd">
+                    Afd branchecode
+                  </label>
+                  <input
+                    id="create-afd"
+                    type="number"
+                    value={createForm.afdBrancheCodeId}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, afdBrancheCodeId: e.target.value }))}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  />
                 </div>
 
-                {xpathBuilder.records.map((record, recordIndex) => (
-                  <div
-                    key={record.id}
-                    className="rounded-md border border-gray-200 bg-white/70 p-3 space-y-3 dark:border-slate-700 dark:bg-slate-900/40"
-                  >
-                    {recordIndex > 0 && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <label className="text-xs font-medium text-gray-500 dark:text-slate-400">
-                          Koppeling met vorige rubriek
-                        </label>
-                        <select
-                          value={record.joiner}
-                          onChange={(event) => handleRecordUpdate(record.id, { joiner: event.target.value })}
-                          className="px-2 py-1 border border-gray-300 rounded-md text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                        >
-                          {joinerOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-medium text-gray-600 dark:text-slate-300">Check op rubriek:</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={record.rubriek}
-                          onChange={(event) => handleRecordUpdate(record.id, { rubriek: event.target.value })}
-                          placeholder="Bijv. PG_456"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                        />
-                        <div className="relative group">
-                          <Info className="w-4 h-4 text-gray-400 dark:text-slate-400" aria-label="Info over rubriek" />
-                          <div className="pointer-events-none absolute right-0 top-6 w-72 rounded-md bg-gray-900 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            Plaats hier de entiteit_Tp nummer of AFD subentiteit. Voorbeeld TP nummer: PG_456.
-                            Voorbeeld AFD: OB_KENTEKE.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {record.conditions.map((condition, conditionIndex) => (
-                      <div key={condition.id} className="flex flex-wrap items-end gap-3">
-                        {conditionIndex > 0 && (
-                          <div className="min-w-[70px]">
-                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400">EN/OF</label>
-                            <select
-                              value={condition.joiner}
-                              onChange={(event) =>
-                                handleConditionUpdate(record.id, condition.id, { joiner: event.target.value })
-                              }
-                              className="mt-1 w-full px-2 py-1 border border-gray-300 rounded-md text-xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                            >
-                              {joinerOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
-                        <div className="flex-1 min-w-[140px]">
-                          <label className="text-xs font-medium text-gray-600 dark:text-slate-300">Operator</label>
-                          <select
-                            value={condition.operator}
-                            onChange={(event) =>
-                              handleConditionUpdate(record.id, condition.id, { operator: event.target.value })
-                            }
-                            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                          >
-                            {operatorOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="flex-1 min-w-[160px]">
-                          <label className="text-xs font-medium text-gray-600 dark:text-slate-300">Met waarde</label>
-                          <input
-                            type="text"
-                            value={condition.value}
-                            onChange={(event) =>
-                              handleConditionUpdate(record.id, condition.id, { value: event.target.value })
-                            }
-                            placeholder="Bijv. 15"
-                            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                          />
-                        </div>
-
-                        {conditionIndex > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCondition(record.id, condition.id)}
-                            className="px-2 py-2 text-xs font-medium text-gray-600 hover:text-gray-800 dark:text-slate-300 dark:hover:text-slate-100"
-                          >
-                            Verwijder
-                          </button>
-                        )}
-                      </div>
-                    ))}
-
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleAddCondition(record.id)}
-                        className="text-xs font-medium text-red-600 hover:opacity-90"
-                      >
-                        + Extra operatie op dezelfde rubriek
-                      </button>
-
-                      {xpathBuilder.records.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRecord(record.id)}
-                          className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
-                        >
-                          Verwijder rubriek
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <button type="button" onClick={handleAddRecord} className="text-xs font-medium text-red-600 hover:opacity-90">
-                    + Rubriek toevoegen
-                  </button>
-                  {builderError && <span className="text-xs text-red-600 dark:text-red-300">{builderError}</span>}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="create-gevolg">
+                    Gevolg
+                  </label>
+                  <input
+                    id="create-gevolg"
+                    type="text"
+                    value={createForm.gevolg}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, gevolg: e.target.value }))}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                    placeholder="Bijv. UitsluitenOptioneel"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="afd-branchecode">
-                  Afd branchecode
-                </label>
-                <input
-                  id="afd-branchecode"
-                  type="number"
-                  value={createForm.afdBrancheCode}
-                  onChange={handleCreateInputChange('afdBrancheCode')}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                />
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">Bron</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-slate-400">(optioneel)</p>
+                <div className="mt-3">
+                  {renderEntiteitFields(
+                    createForm.bron,
+                    (patch) => setCreateForm((p) => ({ ...p, bron: { ...p.bron, ...patch } })),
+                    'create-bron'
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">Rekenregels</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-slate-400">Een dynamiekregel kan meerdere rekenregels hebben.</p>
+                <div className="mt-3">{renderRekenregels(createForm.rekenregels, 'create')}</div>
               </div>
 
               {createError && (
@@ -1077,7 +1137,7 @@ const Dynamiekregels = () => {
 
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-gray-200 brand-modal">
+          <div className="w-full max-w-3xl rounded-2xl border border-gray-200 brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
               <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Bewerk dynamiekregel {editRuleId}</p>
               <button
@@ -1089,7 +1149,35 @@ const Dynamiekregels = () => {
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="px-5 py-4 space-y-4">
+            <form onSubmit={handleEditSubmit} className="px-5 py-4 space-y-5 max-h-[75vh] overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-regelid">
+                    Regel ID
+                  </label>
+                  <input
+                    id="edit-regelid"
+                    type="number"
+                    value={editForm.regelId}
+                    readOnly
+                    className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-600 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-afd">
+                    Afd branchecode
+                  </label>
+                  <input
+                    id="edit-afd"
+                    type="number"
+                    value={editForm.afdBrancheCodeId}
+                    onChange={(e) => setEditForm((p) => ({ ...p, afdBrancheCodeId: e.target.value }))}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-omschrijving">
                   Omschrijving
@@ -1097,23 +1185,45 @@ const Dynamiekregels = () => {
                 <input
                   id="edit-omschrijving"
                   type="text"
-                  value={editOmschrijving}
-                  onChange={(event) => setEditOmschrijving(event.target.value)}
+                  maxLength={200}
+                  value={editForm.omschrijving}
+                  onChange={(e) => setEditForm((p) => ({ ...p, omschrijving: e.target.value }))}
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-expressie">
-                  Aangepaste Xpath expressie
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="edit-gevolg">
+                  Gevolg
                 </label>
-                <textarea
-                  id="edit-expressie"
-                  rows="5"
-                  value={editExpressie}
-                  onChange={(event) => setEditExpressie(event.target.value)}
+                <input
+                  id="edit-gevolg"
+                  type="text"
+                  value={editForm.gevolg}
+                  onChange={(e) => setEditForm((p) => ({ ...p, gevolg: e.target.value }))}
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  placeholder="Bijv. UitsluitenOptioneel"
                 />
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">Bron</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-slate-400">(optioneel)</p>
+                <div className="mt-3">
+                  {renderEntiteitFields(
+                    editForm.bron,
+                    (patch) => setEditForm((p) => ({ ...p, bron: { ...p.bron, ...patch } })),
+                    'edit-bron'
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">Rekenregels</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-slate-400">
+                  Toevoegen/verwijderen wordt automatisch als Actie meegegeven bij opslaan.
+                </p>
+                <div className="mt-3">{renderRekenregels(editForm.rekenregels, 'edit')}</div>
               </div>
 
               {editError && (

@@ -112,7 +112,7 @@ const Dynamiekregels = () => {
       const response = await authFetch(withApiEnv('/api/acceptance-rules'));
 
       if (!response.ok) {
-        throw new Error('Failed to fetch acceptance rules');
+        throw new Error('Failed to fetch dynamiekregels');
       }
 
       const data = await response.json();
@@ -134,7 +134,7 @@ const Dynamiekregels = () => {
         { regelId: 'R010', externNummer: 'EXT-2024-010', omschrijving: 'Documentatie vereisten voor aanvraag' },
         { regelId: 'R011', externNummer: 'EXT-2024-011', omschrijving: 'Gezondheidsverklaring verplicht vanaf leeftijd' },
         { regelId: 'R012', externNummer: 'EXT-2024-012', omschrijving: 'Eigen risico minimum en maximum' },
-        { regelId: 'R013', externNummer: 'EXT-2024-013', omschrijving: "Acceptatie criteria voor gevaarlijke hobby's" },
+        { regelId: 'R013', externNummer: 'EXT-2024-013', omschrijving: "Criteria voor gevaarlijke hobby's" },
         { regelId: 'R014', externNummer: 'EXT-2024-014', omschrijving: 'Polisvoorwaarden voor meerdere verzekeringen' },
         { regelId: 'R015', externNummer: 'EXT-2024-015', omschrijving: 'Annuleringsrecht binnen koelingsperiode' },
       ]);
@@ -666,7 +666,6 @@ const Dynamiekregels = () => {
                       </button>
                     </th>
 
-                    {/* Titles centred above contents */}
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       DETAILS
                     </th>
@@ -680,7 +679,7 @@ const Dynamiekregels = () => {
                   {currentRules.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
-                        Geen acceptatieregels gevonden
+                        Geen dynamiekregels gevonden
                       </td>
                     </tr>
                   ) : (
@@ -733,8 +732,8 @@ const Dynamiekregels = () => {
                                 <button
                                   onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
                                   className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                                  title="Bewerk acceptatieregel"
-                                  aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
+                                  title="Bewerk dynamiekregel"
+                                  aria-label={`Bewerk dynamiekregel ${rule.regelId}`}
                                 >
                                   <Pencil className="w-4 h-4" />
                                 </button>
@@ -743,8 +742,8 @@ const Dynamiekregels = () => {
                                   onClick={() => handleDelete(rule.regelId)}
                                   disabled={deletingId === rule.regelId}
                                   className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
-                                  title="Verwijder acceptatieregel"
-                                  aria-label={`Verwijder acceptatieregel ${rule.regelId}`}
+                                  title="Verwijder dynamiekregel"
+                                  aria-label={`Verwijder dynamiekregel ${rule.regelId}`}
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -768,7 +767,6 @@ const Dynamiekregels = () => {
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between dark:border-slate-700">
               <div className="text-sm text-gray-700 dark:text-slate-200">Totaal {filteredRules.length} regels.</div>
 
-              {/* Paginering: exact TopNav inactive/active styling */}
               <div className="flex gap-2">
                 <button
                   onClick={() => handlePageChange(safePage - 1)}
@@ -845,7 +843,7 @@ const Dynamiekregels = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="px-4 py-5 text-sm text-gray-700 dark:text-slate-200">Acceptatieregel succesvol verwijderd</div>
+            <div className="px-4 py-5 text-sm text-gray-700 dark:text-slate-200">Dynamiekregel succesvol verwijderd</div>
             <div className="px-4 py-3 flex justify-end">
               <button onClick={() => setShowDeleteSuccess(false)} className={[baseBtn, inactiveBtn].join(' ')}>
                 Sluiten
@@ -859,7 +857,7 @@ const Dynamiekregels = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-gray-200 brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
-              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Nieuwe acceptatieregel</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Nieuwe dynamiekregel</p>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"
@@ -1110,7 +1108,7 @@ const Dynamiekregels = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-gray-200 brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
-              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Bewerk acceptatieregel {editRuleId}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Bewerk dynamiekregel {editRuleId}</p>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"

@@ -102,6 +102,9 @@ const RuleDetail = () => {
     }
   };
 
+  const externNummer =
+    (detail?.ExternNummer ?? detail?.externNummer ?? '').toString().trim();
+
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
@@ -124,6 +127,7 @@ const RuleDetail = () => {
 
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
             Acceptatieregel {regelId}
+            {externNummer ? ` (${externNummer})` : ''}
           </h1>
         </div>
 
@@ -167,7 +171,7 @@ const RuleDetail = () => {
              text-white brand-primary
              focus:outline-none focus:ring-2 focus:ring-red-200
              disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                  >
                     <span aria-hidden="true">✨</span>
                     {explainLoading ? 'Uitleg ophalen...' : 'Wat doet deze acceptatieregel?'}
                   </button>

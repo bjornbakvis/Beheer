@@ -40,7 +40,11 @@ const DynamiekregelDetail = () => {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showJsonModal, setShowJsonModal] = useState(false);
+
+  // Modal state met enter/exit animaties
+  const [showJsonModal, setShowJsonModal] = useState(false); // in DOM
+  const [jsonModalMounted, setJsonModalMounted] = useState(false); // anim in
+  const [jsonModalClosing, setJsonModalClosing] = useState(false); // anim out
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -95,6 +99,44 @@ const DynamiekregelDetail = () => {
     };
   }, [detail]);
 
+  const openJsonModal = () => {
+    setShowJsonModal(true);
+    // Next tick: trigger transition to "mounted"
+    requestAnimationFrame(() => setJsonModalMounted(true));
+  };
+
+  const closeJsonModal = () => {
+    // Start close animation
+    setJsonModalClosing(true);
+    setJsonModalMounted(false);
+
+    // After transition duration: unmount
+    window.setTimeout(() => {
+      setShowJsonModal(false);
+      setJsonModalClosing(false);
+    }, 180);
+  };
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (!showJsonModal) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showJsonModal]);
+
+  // ESC to close
+  useEffect(() => {
+    if (!showJsonModal) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') closeJsonModal();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showJsonModal]);
+
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
@@ -136,7 +178,7 @@ const DynamiekregelDetail = () => {
               Refresh
             </button>
 
-            <button onClick={() => setShowJsonModal(true)} className={[baseBtn, activeBtn].join(' ')}>
+            <button onClick={openJsonModal} className={[baseBtn, activeBtn].join(' ')}>
               Volledige JSON
             </button>
           </div>
@@ -225,31 +267,64 @@ const DynamiekregelDetail = () => {
         </div>
       </div>
 
-      {/* JSON Modal */}
+      {/* JSON Modal (met animatie) */}
       {showJsonModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-          onClick={() => setShowJsonModal(false)}
+          className={[
+            'fixed inset-0 z-50 flex items-center justify-center p-4',
+            'transition-opacity duration-200',
+            jsonModalMounted ? 'opacity-100' : 'opacity-0',
+          ].join(' ')}
+          onMouseDown={(e) => {
+            // Klik buiten modal sluit, maar alleen op backdrop
+            if (e.target === e.currentTarget) closeJsonModal();
+          }}
         >
+          {/* Backdrop */}
           <div
-            className="w-full max-w-3xl rounded-2xl border border-gray-200 brand-modal bg-white"
-            onClick={(e) => e.stopPropagation()}
+            className={[
+              'absolute inset-0',
+              'bg-black/50',
+              'backdrop-blur-[2px]',
+              'transition-opacity duration-200',
+              jsonModalMounted ? 'opacity-100' : 'opacity-0',
+            ].join(' ')}
+          />
+
+          {/* Panel */}
+          <div
+            className={[
+              'relative w-full max-w-3xl',
+              'rounded-2xl border border-gray-200 brand-modal bg-white shadow-2xl',
+              'transition-transform duration-200',
+              jsonModalMounted ? 'translate-y-0 scale-100' : 'translate-y-2 scale-[0.98]',
+              jsonModalClosing ? 'pointer-events-none' : '',
+            ].join(' ')}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <p className="text-sm font-medium text-gray-900">Volledige JSON</p>
-              <button onClick={() => setShowJsonModal(false)} className="p-1 rounded-md hover:bg-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-600" />
+                <p className="text-sm font-medium text-gray-900">Volledige JSON</p>
+              </div>
+
+              <button
+                onClick={closeJsonModal}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-200"
+                aria-label="Sluit"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
-              <pre className="text-sm font-sans whitespace-pre-wrap break-words text-gray-900">
+              <pre className="text-sm font-sans whitespace-pre-wrap break-words text-gray-900 leading-relaxed">
                 {JSON.stringify(detail, null, 2)}
               </pre>
             </div>
 
-            <div className="px-5 py-4 border-t border-gray-200 flex justify-end">
-              <button onClick={() => setShowJsonModal(false)} className={[baseBtn, inactiveBtn].join(' ')}>
+            <div className="px-5 py-4 border-t border-gray-200 flex justify-end gap-2">
+              <button onClick={closeJsonModal} className={[baseBtn, inactiveBtn].join(' ')}>
                 Sluiten
               </button>
             </div>

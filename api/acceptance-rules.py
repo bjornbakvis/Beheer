@@ -95,8 +95,8 @@ def _dias_headers(config: dict, token: str) -> dict:
     return {
         "Authorization": f"Bearer {token}",
         "Accept": "application/json",
-        "Tenant-CustomerId": str(config["tenant_customer_id"]),
-        "BedrijfId": str(config["bedrijf_id"]),
+        "Tenant-CustomerId": config["tenant_customer_id"],
+        "BedrijfId": config["bedrijf_id"],
     }
 
 
@@ -177,19 +177,14 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Pragma", "no-cache")
-        self.send_header("Vary", "Origin")
 
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
 
     def do_OPTIONS(self):
-        # Handig voor CORS preflight in dev
+        # Preflight is niet nodig bij same-origin, maar dit kan geen kwaad
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Authorization,Content-Type")
         self.send_header("Cache-Control", "no-store, max-age=0")
         self.end_headers()
 

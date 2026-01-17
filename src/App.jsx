@@ -21,6 +21,9 @@ const App = () => {
   const [sortDir, setSortDir] = useState('asc'); // asc | desc
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  // Delete bevestiging (altijd eerst vragen)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pendingDeleteRegelId, setPendingDeleteRegelId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     omschrijving: '',
@@ -248,6 +251,16 @@ const App = () => {
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const openDeleteConfirm = (regelId) => {
+    setPendingDeleteRegelId(regelId);
+    setShowDeleteConfirm(true);
+  };
+
+  const closeDeleteConfirm = () => {
+    setShowDeleteConfirm(false);
+    setPendingDeleteRegelId(null);
   };
 
   const handleSearchChange = (e) => {
@@ -799,7 +812,7 @@ const App = () => {
                                 </button>
 
                                 <button
-                                  onClick={() => handleDelete(rule.regelId)}
+                                  onClick={() => openDeleteConfirm(rule.regelId)}
                                   disabled={deletingId === rule.regelId}
                                   className="p-2 rounded-md border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-900/20"
                                   title="Verwijder acceptatieregel"
@@ -889,6 +902,47 @@ const App = () => {
           )}
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-gray-200 brand-modal">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-700">
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Bevestig verwijderen</p>
+              <button
+                onClick={closeDeleteConfirm}
+                className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"
+                aria-label="Sluit bevestiging"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-4 py-5 text-sm text-gray-700 dark:text-slate-200">
+              Weet je zeker dat je acceptatieregel <span className="font-medium">{pendingDeleteRegelId}</span> wilt verwijderen?
+            </div>
+
+            <div className="px-4 py-3 flex justify-end gap-2">
+              <button onClick={closeDeleteConfirm} className={[baseBtn, inactiveBtn].join(' ')}>
+                Annuleren
+              </button>
+              <button
+                onClick={() => {
+                  const id = pendingDeleteRegelId;
+                  closeDeleteConfirm();
+                  if (id) handleDelete(id);
+                }}
+                disabled={!pendingDeleteRegelId || deletingId === pendingDeleteRegelId}
+                className={[
+                  baseBtn,
+                  'px-4 py-2 border border-red-200 text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition disabled:opacity-60 disabled:cursor-not-allowed dark:border-red-700/60 dark:text-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/40',
+                ].join(' ')}
+              >
+                Verwijder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDeleteSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">

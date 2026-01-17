@@ -36,9 +36,12 @@ const App = () => {
   const [editError, setEditError] = useState(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
-  // NIEUW: originele waarden opslaan zodat we kunnen checken of er echt iets gewijzigd is
+  // originele waarden opslaan zodat we kunnen checken of er echt iets gewijzigd is
   const [originalEditOmschrijving, setOriginalEditOmschrijving] = useState('');
   const [originalEditExpressie, setOriginalEditExpressie] = useState('');
+
+  // NIEUW: expressie ophalen bij openen edit modal
+  const [editLoadingExpressie, setEditLoadingExpressie] = useState(false);
 
   const rulesPerPage = 10;
 
@@ -102,7 +105,7 @@ const App = () => {
             regelId: item.regelId ?? item.RegelId ?? item.id ?? '',
             externNummer: item.externNummer ?? item.ExternNummer ?? '',
             omschrijving: item.omschrijving ?? item.Omschrijving ?? '',
-            // NIEUW: expressie meenemen zodat edit-modal kan prefillen
+            // expressie meenemen (maar edit-prefill komt via GET)
             expressie: item.expressie ?? item.Expressie ?? '',
           },
         ];
@@ -408,20 +411,60 @@ const App = () => {
     setBuilderError(null);
   };
 
-  const openEditModal = (regelId, omschrijvingValue, expressieValue) => {
+  // NIEUW: helper om expressie uit detail-response te halen (verschillende shapes)
+  const extractExpressie = (data) => {
+    if (!data) return '';
+    return (
+      data.Expressie ??
+      data.expressie ??
+      data.Data?.Expressie ??
+      data.Data?.expressie ??
+      data.data?.Expressie ??
+      data.data?.expressie ??
+      ''
+    );
+  };
+
+  // AANGEPAST: edit-modal opent met omschrijving, en haalt expressie via GET op
+  const openEditModal = async (regelId, omschrijvingValue) => {
     const oms = omschrijvingValue || '';
-    const exp = expressieValue || '';
 
     setEditRuleId(regelId);
     setEditOmschrijving(oms);
-    setEditExpressie(exp);
+    setEditExpressie('');
 
-    // NIEUW: originelen bewaren
     setOriginalEditOmschrijving(oms);
-    setOriginalEditExpressie(exp);
+    setOriginalEditExpressie('');
 
     setEditError(null);
     setShowEditModal(true);
+
+    if (!regelId) return;
+
+    setEditLoadingExpressie(true);
+    try {
+      const res = await authFetch(
+        withApiEnv(`/api/acceptance-rules?regelId=${encodeURIComponent(regelId)}`),
+        {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-store' },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error('Kon de huidige Xpath expressie niet ophalen.');
+      }
+
+      const data = await res.json();
+      const expr = extractExpressie(data);
+
+      setEditExpressie(expr || '');
+      setOriginalEditExpressie((expr || '').trim());
+    } catch (err) {
+      setEditError(err.message);
+    } finally {
+      setEditLoadingExpressie(false);
+    }
   };
 
   const closeEditModal = () => {
@@ -432,6 +475,7 @@ const App = () => {
     setOriginalEditOmschrijving('');
     setOriginalEditExpressie('');
     setEditError(null);
+    setEditLoadingExpressie(false);
   };
 
   const hasEditChanges = useMemo(() => {
@@ -446,7 +490,6 @@ const App = () => {
     event.preventDefault();
     setEditError(null);
 
-    // NIEUW: blokkeren als er niets gewijzigd is
     if (!hasEditChanges) {
       setEditError('Er zijn geen wijzigingen om op te slaan.');
       return;
@@ -747,7 +790,7 @@ const App = () => {
                             {rule.externNummer?.toString().toLowerCase().includes('tp') ? (
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => openEditModal(rule.regelId, rule.omschrijving, rule.expressie)}
+                                  onClick={() => openEditModal(rule.regelId, rule.omschrijving)}
                                   className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                                   title="Bewerk acceptatieregel"
                                   aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
@@ -931,7 +974,11 @@ const App = () => {
                     type="button"
                     onClick={handleApplyBuilder}
                     disabled={!buildXPathExpression(xpathBuilder.records)}
-                    className={[baseBtn, activeBtn, 'text-xs px-3 py-2 disabled:opacity-60 disabled:cursor-not-allowed'].join(' ')}
+                    className={[
+                      baseBtn,
+                      activeBtn,
+                      'text-xs px-3 py-2 disabled:opacity-60 disabled:cursor-not-allowed',
+                    ].join(' ')}
                   >
                     Vul Xpath Expressie
                   </button>
@@ -1111,7 +1158,11 @@ const App = () => {
                 <button
                   type="submit"
                   disabled={createSubmitting}
-                  className={[baseBtn, activeBtn, 'px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed'].join(' ')}
+                  className={[
+                    baseBtn,
+                    activeBtn,
+                    'px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed',
+                  ].join(' ')}
                 >
                   Opslaan
                 </button>
@@ -1162,6 +1213,9 @@ const App = () => {
                   onChange={(event) => setEditExpressie(event.target.value)}
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
+                {editLoadingExpressie && (
+                  <p className="text-xs text-gray-500 mt-1 dark:text-slate-400">Huidige expressie wordt geladen…</p>
+                )}
               </div>
 
               {editError && (
@@ -1181,8 +1235,12 @@ const App = () => {
 
                 <button
                   type="submit"
-                  disabled={editSubmitting || !hasEditChanges}
-                  className={[baseBtn, activeBtn, 'px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed'].join(' ')}
+                  disabled={editSubmitting || editLoadingExpressie || !hasEditChanges}
+                  className={[
+                    baseBtn,
+                    activeBtn,
+                    'px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed',
+                  ].join(' ')}
                 >
                   Opslaan
                 </button>

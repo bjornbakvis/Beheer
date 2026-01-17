@@ -122,7 +122,7 @@ const Dynamiekregels = () => {
       const response = await authFetch(withApiEnv('/api/dynamiekregels'));
 
       if (!response.ok) {
-        throw new Error('Er konden geen dynamiekregels worden opgehaald');
+        throw new Error('De dynamiekregels konden niet worden opgehaald');
       }
 
       const data = await response.json();

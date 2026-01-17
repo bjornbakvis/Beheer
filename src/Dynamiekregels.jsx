@@ -127,15 +127,7 @@ const Dynamiekregels = () => {
 
       const data = await response.json();
       const normalized = normalizeRules(data.rules || data.data || data);
-
-      // Alleen jouw gevraagde gedrag:
-      // - bij geen resultaat óók alleen de banner tonen (en géén tabel)
-      if (normalized.length === 0) {
-        setRules([]);
-        setError('Geen dynamiekregels gevonden');
-      } else {
-        setRules(normalized);
-      }
+      setRules(normalized);
     } catch (err) {
       setError(err.message);
       setRules([]);
@@ -758,9 +750,6 @@ const Dynamiekregels = () => {
     );
   };
 
-  // Alleen de tabel tonen als er daadwerkelijk data is én er geen error is
-  const showTable = !loading && !error && rules.length > 0;
-
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
@@ -807,7 +796,7 @@ const Dynamiekregels = () => {
           </div>
 
           {error && (
-            <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3 dark:bg-yellow-900/30 dark:border-yellow-700/60">
+            <div className="mx-6 mt-6 mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3 dark:bg-yellow-900/30 dark:border-yellow-700/60">
               <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5 dark:text-yellow-400" />
               <div>
                 <p className="text-sm text-yellow-800 font-medium dark:text-yellow-200">Actie mislukt</p>
@@ -821,7 +810,7 @@ const Dynamiekregels = () => {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
               </div>
-            ) : showTable ? (
+            ) : error ? null : (
               <table className="w-full table-fixed">
                 <colgroup>
                   <col style={{ width: '120px' }} />
@@ -953,7 +942,7 @@ const Dynamiekregels = () => {
                   )}
                 </tbody>
               </table>
-            ) : null}
+            )}
           </div>
 
           {rules.length > 0 && (
@@ -1114,7 +1103,9 @@ const Dynamiekregels = () => {
 
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
                 <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">Rekenregels</p>
-                <p className="text-xs text-gray-500 mt-1 dark:text-slate-400">Een dynamiekregel kan meerdere rekenregels hebben.</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-slate-400">
+                  Een dynamiekregel kan meerdere rekenregels hebben.
+                </p>
                 <div className="mt-3">{renderRekenregels(createForm.rekenregels, 'create')}</div>
               </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TopNav from './TopNav';
@@ -16,6 +16,11 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Sorting zoals App.jsx / Dynamiekregels.jsx
+  const [sortKey, setSortKey] = useState('productId'); // productId | omschrijving
+  const [sortDir, setSortDir] = useState('asc'); // asc | desc
+
   const navigate = useNavigate();
 
   const normalizeProducts = (incoming) => {
@@ -77,13 +82,46 @@ const Products = () => {
     return () => window.removeEventListener('apiEnvChange', handleEnvChange);
   }, []);
 
-  const filteredProducts = products.filter((product) => {
-    const omschrijving = product.omschrijving?.toLowerCase() || '';
-    if (omschrijving.startsWith('unit 4')) return false;
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return true;
-    return product.productId?.toString().toLowerCase().includes(term) || omschrijving.includes(term);
-  });
+
+    const filtered = (Array.isArray(products) ? products : []).filter((product) => {
+      const omschrijving = product.omschrijving?.toLowerCase() || '';
+      if (omschrijving.startsWith('unit 4')) return false;
+      if (!term) return true;
+      return product.productId?.toString().toLowerCase().includes(term) || omschrijving.includes(term);
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      const av =
+        sortKey === 'productId'
+          ? (a.productId ?? '')
+          : (a.omschrijving ?? '');
+
+      const bv =
+        sortKey === 'productId'
+          ? (b.productId ?? '')
+          : (b.omschrijving ?? '');
+
+      const cmp = av.toString().localeCompare(bv.toString(), 'nl', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [products, searchTerm, sortKey, sortDir]);
 
   return (
     <div className="min-h-screen brand-page">
@@ -149,14 +187,37 @@ const Products = () => {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
-                      PRODUCT ID
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('productId')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        PRODUCT ID{' '}
+                        <span className="inline-block w-4 text-right text-[1em] leading-none">
+                          {sortKey === 'productId' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
+                      </button>
                     </th>
+
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
-                      OMSCHRIJVING
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('omschrijving')}
+                        className="inline-flex items-center gap-2 hover:opacity-80 select-none"
+                        title="Klik om te sorteren"
+                      >
+                        OMSCHRIJVING{' '}
+                        <span className="inline-block w-4 text-right text-[1em] leading-none">
+                          {sortKey === 'omschrijving' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                        </span>
+                      </button>
                     </th>
+
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
-                      ACCEPTATIE REGELS
+                      ACCEPTATIEREGELS
                     </th>
+
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       DYNAMIEKREGELS
                     </th>

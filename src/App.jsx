@@ -112,7 +112,7 @@ const App = () => {
       const response = await authFetch(withApiEnv('/api/acceptance-rules'));
 
       if (!response.ok) {
-        throw new Error('Failed to fetch acceptance rules');
+        throw new Error('Er konden geen acceptatieregels worden opgehaald');
       }
 
       const data = await response.json();

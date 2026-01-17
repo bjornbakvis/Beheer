@@ -17,7 +17,7 @@ const Products = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Sorting zoals App.jsx / Dynamiekregels.jsx
+  // Sorteren zoals App.jsx / Dynamiekregels.jsx
   const [sortKey, setSortKey] = useState('productId'); // productId | omschrijving
   const [sortDir, setSortDir] = useState('asc'); // asc | desc
 
@@ -94,7 +94,7 @@ const Products = () => {
   const filteredProducts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
-    const filtered = (Array.isArray(products) ? products : []).filter((product) => {
+    const filtered = products.filter((product) => {
       const omschrijving = product.omschrijving?.toLowerCase() || '';
       if (omschrijving.startsWith('unit 4')) return false;
       if (!term) return true;
@@ -102,15 +102,8 @@ const Products = () => {
     });
 
     const sorted = [...filtered].sort((a, b) => {
-      const av =
-        sortKey === 'productId'
-          ? (a.productId ?? '')
-          : (a.omschrijving ?? '');
-
-      const bv =
-        sortKey === 'productId'
-          ? (b.productId ?? '')
-          : (b.omschrijving ?? '');
+      const av = sortKey === 'productId' ? (a.productId ?? '') : (a.omschrijving ?? '');
+      const bv = sortKey === 'productId' ? (b.productId ?? '') : (b.omschrijving ?? '');
 
       const cmp = av.toString().localeCompare(bv.toString(), 'nl', {
         numeric: true,

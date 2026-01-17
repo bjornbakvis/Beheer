@@ -766,7 +766,7 @@ const App = () => {
 
           {rules.length > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between dark:border-slate-700">
-              <div className="text-sm text-gray-700 dark:text-slate-200">Totaal {filteredRules.length} regels.</div>
+              <div className="text-sm text-gray-700 dark:text-slate-200">Totaal {filteredRules.length} regels</div>
 
               {/* Paginering: exact TopNav inactive/active styling */}
               <div className="flex gap-2">

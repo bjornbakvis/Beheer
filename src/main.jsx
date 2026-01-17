@@ -7,6 +7,7 @@ import DynamiekregelDetail from './DynamiekregelDetail';
 import RuleDetail from './RuleDetail';
 import Products from './Products';
 import ProductRules from './ProductRules';
+import ProductDynamiekregels from './ProductDynamiekregels';
 import AuthGate from './AuthGate';
 import './index.css';
 
@@ -20,6 +21,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dynamiekregels/:regelId" element={<DynamiekregelDetail />} />
           <Route path="/producten" element={<Products />} />
           <Route path="/producten/:productId/regels" element={<ProductRules />} />
+          <Route path="/producten/:productId/dynamiekregels" element={<ProductDynamiekregels />} />
           <Route path="/rules/:regelId" element={<RuleDetail />} />
         </Routes>
       </AuthGate>

@@ -84,7 +84,7 @@ const DynamiekregelDetail = () => {
       });
 
       if (!res.ok) {
-        throw new Error(`Failed to fetch details (status ${res.status})`);
+        throw new Error(`De dynamiekregel kon niet worden opgehaald`);
       }
 
       const data = await res.json();

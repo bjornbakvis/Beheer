@@ -26,7 +26,7 @@ ACCEPTANCE_KINETIC_HOST = os.getenv("KINETIC_HOST_ACCEPTANCE", DEFAULT_KINETIC_H
 ACCEPTANCE_CLIENT_ID = os.getenv("KINETIC_CLIENT_ID_ACCEPTANCE", DEFAULT_CLIENT_ID)
 ACCEPTANCE_CLIENT_SECRET = os.getenv("KINETIC_CLIENT_SECRET_ACCEPTANCE", DEFAULT_CLIENT_SECRET)
 
-# DIAS headers (re-use same pattern as acceptance-rules.py)
+# DIAS headers
 DEFAULT_TENANT_CUSTOMER_ID = os.getenv("DIAS_TENANT_CUSTOMER_ID", "")
 DEFAULT_BEDRIJF_ID = os.getenv("DIAS_BEDRIJF_ID", "")
 DEFAULT_MEDEWERKER_ID = os.getenv("DIAS_MEDEWERKER_ID", "")
@@ -101,22 +101,13 @@ def get_bearer_token(env_key="production"):
 
 
 def _dias_headers(config, token):
-    # Enforce presence: avoids mysterious upstream 4xx/404s
-    required = ["tenant_customer_id", "bedrijf_id", "medewerker_id", "kantoor_id"]
-    missing = [k for k in required if not str(config.get(k, "")).strip()]
-    if missing:
-        raise RuntimeError(
-            "Missing DIAS env vars: " + ", ".join(missing) +
-            " (set DIAS_* in Vercel; optionally DIAS_*_ACCEPTANCE)"
-        )
-
     return {
         "Authorization": f"Bearer {token}",
         "Accept": "application/json",
-        "Tenant-CustomerId": str(config["tenant_customer_id"]),
-        "BedrijfId": str(config["bedrijf_id"]),
-        "MedewerkerId": str(config["medewerker_id"]),
-        "KantoorId": str(config["kantoor_id"]),
+        "Tenant-CustomerId": config["tenant_customer_id"],
+        "BedrijfId": config["bedrijf_id"],
+        "MedewerkerId": config["medewerker_id"],
+        "KantoorId": config["kantoor_id"],
     }
 
 
@@ -125,7 +116,6 @@ def fetch_products(config, token):
         response = client.get(
             f"{config['host'].rstrip('/')}/contract/api/v1/contracten/verzekeringen/productdefinities",
             params={
-                # Note: keep these as strings; upstream expects booleans/flags
                 "AlleenLopendProduct": "true",
                 "IsBeschikbaarVoorMedewerker": "true",
             },
@@ -169,7 +159,6 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Pragma", "no-cache")
 
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
 

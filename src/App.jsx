@@ -120,24 +120,7 @@ const App = () => {
       setRules(normalized);
     } catch (err) {
       setError(err.message);
-      // Demo data for illustration when API fails
-      setRules([
-        { regelId: 'R001', externNummer: 'EXT-2024-001', omschrijving: 'Leeftijdsgrens voor standaard verzekering' },
-        { regelId: 'R002', externNummer: 'EXT-2024-002', omschrijving: 'Medische keuring vereist boven drempelwaarde' },
-        { regelId: 'R003', externNummer: 'EXT-2024-003', omschrijving: 'Geografische beperking voor bepaalde gebieden' },
-        { regelId: 'R004', externNummer: 'EXT-2024-004', omschrijving: 'Beroepsrisico evaluatie criteria' },
-        { regelId: 'R005', externNummer: 'EXT-2024-005', omschrijving: 'Minimale dekking voor bedrijfsverzekeringen' },
-        { regelId: 'R006', externNummer: 'EXT-2024-006', omschrijving: 'Uitsluitingen voor pre-existente condities' },
-        { regelId: 'R007', externNummer: 'EXT-2024-007', omschrijving: 'Wachttijd voor bepaalde dekking' },
-        { regelId: 'R008', externNummer: 'EXT-2024-008', omschrijving: 'Maximum dekkingsbedrag per categorie' },
-        { regelId: 'R009', externNummer: 'EXT-2024-009', omschrijving: 'Risico-opslag voor specifieke branches' },
-        { regelId: 'R010', externNummer: 'EXT-2024-010', omschrijving: 'Documentatie vereisten voor aanvraag' },
-        { regelId: 'R011', externNummer: 'EXT-2024-011', omschrijving: 'Gezondheidsverklaring verplicht vanaf leeftijd' },
-        { regelId: 'R012', externNummer: 'EXT-2024-012', omschrijving: 'Eigen risico minimum en maximum' },
-        { regelId: 'R013', externNummer: 'EXT-2024-013', omschrijving: "Acceptatie criteria voor gevaarlijke hobby's" },
-        { regelId: 'R014', externNummer: 'EXT-2024-014', omschrijving: 'Polisvoorwaarden voor meerdere verzekeringen' },
-        { regelId: 'R015', externNummer: 'EXT-2024-015', omschrijving: 'Annuleringsrecht binnen koelingsperiode' },
-      ]);
+      setRules([]);
     } finally {
       setLoading(false);
     }
@@ -598,7 +581,7 @@ const App = () => {
           </div>
 
           {error && (
-            <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3 dark:bg-yellow-900/30 dark:border-yellow-700/60">
+            <div className="mx-6 mt-6 mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3 dark:bg-yellow-900/30 dark:border-yellow-700/60">
               <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5 dark:text-yellow-400" />
               <div>
                 <p className="text-sm text-yellow-800 font-medium dark:text-yellow-200">Actie mislukt</p>
@@ -612,7 +595,7 @@ const App = () => {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
               </div>
-            ) : (
+            ) : error ? null : (
               <table className="w-full table-fixed">
                 <colgroup>
                   <col style={{ width: '104px' }} />
@@ -1110,7 +1093,9 @@ const App = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-gray-200 brand-modal">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
-              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Bewerk acceptatieregel {editRuleId}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
+                Bewerk acceptatieregel {editRuleId}
+              </p>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"

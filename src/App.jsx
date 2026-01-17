@@ -35,6 +35,11 @@ const App = () => {
   const [editExpressie, setEditExpressie] = useState('');
   const [editError, setEditError] = useState(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // NIEUW: originele waarden opslaan zodat we kunnen checken of er echt iets gewijzigd is
+  const [originalEditOmschrijving, setOriginalEditOmschrijving] = useState('');
+  const [originalEditExpressie, setOriginalEditExpressie] = useState('');
+
   const rulesPerPage = 10;
 
   const navigate = useNavigate();
@@ -97,6 +102,8 @@ const App = () => {
             regelId: item.regelId ?? item.RegelId ?? item.id ?? '',
             externNummer: item.externNummer ?? item.ExternNummer ?? '',
             omschrijving: item.omschrijving ?? item.Omschrijving ?? '',
+            // NIEUW: expressie meenemen zodat edit-modal kan prefillen
+            expressie: item.expressie ?? item.Expressie ?? '',
           },
         ];
       });
@@ -402,16 +409,48 @@ const App = () => {
   };
 
   const openEditModal = (regelId, omschrijvingValue, expressieValue) => {
+    const oms = omschrijvingValue || '';
+    const exp = expressieValue || '';
+
     setEditRuleId(regelId);
-    setEditOmschrijving(omschrijvingValue || '');
-    setEditExpressie(expressieValue || '');
+    setEditOmschrijving(oms);
+    setEditExpressie(exp);
+
+    // NIEUW: originelen bewaren
+    setOriginalEditOmschrijving(oms);
+    setOriginalEditExpressie(exp);
+
     setEditError(null);
     setShowEditModal(true);
   };
 
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditRuleId(null);
+    setEditOmschrijving('');
+    setEditExpressie('');
+    setOriginalEditOmschrijving('');
+    setOriginalEditExpressie('');
+    setEditError(null);
+  };
+
+  const hasEditChanges = useMemo(() => {
+    const a = (editOmschrijving ?? '').trim();
+    const b = (originalEditOmschrijving ?? '').trim();
+    const c = (editExpressie ?? '').trim();
+    const d = (originalEditExpressie ?? '').trim();
+    return a !== b || c !== d;
+  }, [editOmschrijving, editExpressie, originalEditOmschrijving, originalEditExpressie]);
+
   const handleEditSubmit = async (event) => {
     event.preventDefault();
     setEditError(null);
+
+    // NIEUW: blokkeren als er niets gewijzigd is
+    if (!hasEditChanges) {
+      setEditError('Er zijn geen wijzigingen om op te slaan.');
+      return;
+    }
 
     if (!editRuleId) {
       setEditError('RegelId ontbreekt.');
@@ -454,10 +493,7 @@ const App = () => {
         throw new Error(message);
       }
 
-      setShowEditModal(false);
-      setEditRuleId(null);
-      setEditOmschrijving('');
-      setEditExpressie('');
+      closeEditModal();
       fetchRules();
     } catch (err) {
       setEditError(err.message);
@@ -555,7 +591,6 @@ const App = () => {
                   className="w-full md:w-60 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 />
 
-                {/* Refresh: exact TopNav active style */}
                 <button
                   onClick={handleRefresh}
                   disabled={loading}
@@ -569,7 +604,6 @@ const App = () => {
                   Refresh
                 </button>
 
-                {/* + Nieuwe regel: zelfde active style (was al brand-primary) */}
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className={[baseBtn, activeBtn, 'flex items-center justify-center gap-2'].join(' ')}
@@ -649,7 +683,6 @@ const App = () => {
                       </button>
                     </th>
 
-                    {/* Titles centred above contents */}
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider dark:text-slate-300 whitespace-nowrap">
                       DETAILS
                     </th>
@@ -714,7 +747,7 @@ const App = () => {
                             {rule.externNummer?.toString().toLowerCase().includes('tp') ? (
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => openEditModal(rule.regelId, rule.omschrijving, '')}
+                                  onClick={() => openEditModal(rule.regelId, rule.omschrijving, rule.expressie)}
                                   className="p-2 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                                   title="Bewerk acceptatieregel"
                                   aria-label={`Bewerk acceptatieregel ${rule.regelId}`}
@@ -751,7 +784,6 @@ const App = () => {
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between dark:border-slate-700">
               <div className="text-sm text-gray-700 dark:text-slate-200">Totaal {filteredRules.length} regels</div>
 
-              {/* Paginering: exact TopNav inactive/active styling */}
               <div className="flex gap-2">
                 <button
                   onClick={() => handlePageChange(safePage - 1)}
@@ -1097,7 +1129,7 @@ const App = () => {
                 Bewerk acceptatieregel {editRuleId}
               </p>
               <button
-                onClick={() => setShowEditModal(false)}
+                onClick={closeEditModal}
                 className="p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800"
                 aria-label="Sluit formulier"
               >
@@ -1141,7 +1173,7 @@ const App = () => {
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowEditModal(false)}
+                  onClick={closeEditModal}
                   className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md border border-gray-200 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
                 >
                   Annuleren
@@ -1149,7 +1181,7 @@ const App = () => {
 
                 <button
                   type="submit"
-                  disabled={editSubmitting}
+                  disabled={editSubmitting || !hasEditChanges}
                   className={[baseBtn, activeBtn, 'px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed'].join(' ')}
                 >
                   Opslaan

@@ -182,7 +182,7 @@ const DynamiekregelDetail = () => {
             <div className="flex gap-3 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
               <AlertCircle className="w-5 h-5" />
               <div>
-                <p className="text-sm font-medium">Kon details niet laden</p>
+                <p className="text-sm font-medium">Actie mislukt</p>
                 <p className="text-xs">{error}</p>
               </div>
             </div>

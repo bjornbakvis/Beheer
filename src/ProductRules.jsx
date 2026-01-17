@@ -43,7 +43,7 @@ const ProductRules = () => {
         }
       );
       if (!res.ok) {
-        throw new Error(`De acceptatieregel kon niet worden opgehaald`);
+        throw new Error(`De acceptatieregels konden niet worden opgehaald`);
       }
       const data = await res.json();
       const validatieregels = Array.isArray(data.Validatieregels)

@@ -5,6 +5,12 @@ import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { authFetch } from './apiAuth';
 
+// Zelfde knop-stijl als TopNav.jsx / App.jsx / Dynamiekregels.jsx
+const baseBtn =
+  'px-3 py-2 rounded-xl text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-red-200';
+const inactiveBtn = 'brand-outline hover:bg-red-50';
+const activeBtn = 'brand-primary text-white border-transparent shadow-sm';
+
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,10 +82,7 @@ const Products = () => {
     if (omschrijving.startsWith('unit 4')) return false;
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
-    return (
-      product.productId?.toString().toLowerCase().includes(term) ||
-      omschrijving.includes(term)
-    );
+    return product.productId?.toString().toLowerCase().includes(term) || omschrijving.includes(term);
   });
 
   return (
@@ -91,10 +94,9 @@ const Products = () => {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">Producten</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Overzicht van de beschikbare producten
-                </p>
+                <p className="text-sm text-gray-600 mt-1">Overzicht van de beschikbare producten</p>
               </div>
+
               <div className="flex flex-col gap-2 md:flex-row md:items-center">
                 <input
                   type="text"
@@ -103,10 +105,15 @@ const Products = () => {
                   placeholder="Zoek op Product Id of Omschrijving"
                   className="w-full md:w-64 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition"
                 />
+
                 <button
                   onClick={fetchProducts}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition brand-primary"
+                  className={[
+                    baseBtn,
+                    activeBtn,
+                    'flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed',
+                  ].join(' ')}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
@@ -120,9 +127,7 @@ const Products = () => {
               <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm text-yellow-800 font-medium">Actie mislukt</p>
-                <p className="text-xs text-yellow-700 mt-1">
-                  De productdefinities konden niet worden opgehaald
-                </p>
+                <p className="text-xs text-yellow-700 mt-1">De productdefinities konden niet worden opgehaald</p>
               </div>
             </div>
           )}
@@ -133,24 +138,35 @@ const Products = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
               </div>
             ) : error ? null : (
-              <table className="w-full">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: '120px' }} />
+                  <col />
+                  <col style={{ width: '170px' }} />
+                  <col style={{ width: '170px' }} />
+                </colgroup>
+
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Product Id
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                      PRODUCT ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Omschrijving
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                      OMSCHRIJVING
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Acceptatie regels
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                      ACCEPTATIE REGELS
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                      DYNAMIEKREGELS
                     </th>
                   </tr>
                 </thead>
+
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan="3" className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
+                      <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
                         Geen producten gevonden
                       </td>
                     </tr>
@@ -158,23 +174,40 @@ const Products = () => {
                     filteredProducts.map((product) => (
                       <tr
                         key={product.productId || product.omschrijving}
-                        className="hover:bg-gray-50 transition-colors dark:hover:bg-slate-800"
+                        className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {product.productId || '-'}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
+
+                        <td className="px-6 py-4 text-sm text-gray-700 truncate" title={product.omschrijving}>
                           {product.omschrijving || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={() => navigate(`/producten/${product.productId}/regels`)}
-                            disabled={!product.productId}
-                            className="px-3 py-2 rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed border brand-outline"
-                            title="Toon acceptatieregels"
-                          >
-                            Bekijk
-                          </button>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                          <div className="w-full flex justify-center">
+                            <button
+                              onClick={() => navigate(`/producten/${product.productId}/regels`)}
+                              disabled={!product.productId}
+                              className="px-3 py-2 rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed border brand-outline"
+                              title="Toon acceptatieregels"
+                            >
+                              Bekijk
+                            </button>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                          <div className="w-full flex justify-center">
+                            <button
+                              onClick={() => navigate(`/producten/${product.productId}/dynamiekregels`)}
+                              disabled={!product.productId}
+                              className="px-3 py-2 rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed border brand-outline"
+                              title="Toon dynamiekregels"
+                            >
+                              Bekijk
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))

@@ -1,14 +1,21 @@
 import os
 import base64
+import hmac
 
 
 def is_authorized(headers):
     user = os.getenv("BASIC_AUTH_USER")
     password = os.getenv("BASIC_AUTH_PASS")
 
-    # Als er geen env vars gezet zijn, laten we alles door (handig voor lokale dev).
+    # Op Vercel is VERCEL_ENV meestal: production / preview / development
+    vercel_env = (os.getenv("VERCEL_ENV") or "").lower()
+    is_prod = vercel_env == "production"
+
+    # Als env vars ontbreken:
+    # - production: NIET doorlaten
+    # - development/preview/lokaal: WEL doorlaten (handig tijdens bouwen)
     if not user or not password:
-        return True
+        return False if is_prod else True
 
     if not headers:
         return False
@@ -27,23 +34,6 @@ def is_authorized(headers):
         return False
 
     u, p = decoded.split(":", 1)
-    return u == user and p == password
 
-
-def send_unauthorized(handler):
-    """
-    Belangrijk:
-    - GEEN 'WWW-Authenticate' header zetten.
-      Die header triggert de browser/Google login popup.
-    - We zetten WEL een eigen header zodat de frontend weet:
-      dit is een Basic-Auth-401 (dus écht fout gebruikersnaam/wachtwoord).
-    """
-    handler.send_response(401)
-    handler.send_header("Content-Type", "application/json; charset=utf-8")
-    handler.send_header("Cache-Control", "no-store")
-
-    # ✅ Dit is de “label”: hiermee herkennen we “echte login fout”
-    handler.send_header("X-Auth-Reason", "basic")
-
-    handler.end_headers()
-    handler.wfile.write(b'{"error":"unauthorized"}')
+    # compare_digest voorkomt timing-leaks
+    return hmac.compare_digest(u, user) and hmac.compare_digest(p, password)

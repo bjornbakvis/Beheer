@@ -12,6 +12,10 @@
   color-scheme: light;
 }
 
+html {
+  overflow-y: scroll;
+}
+
 body {
   /* Was: theme(colors.brand.surfaceMuted) */
   background: theme(colors.gray.50);

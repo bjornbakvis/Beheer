@@ -56,11 +56,7 @@ const Products = () => {
       setProducts(normalized);
     } catch (err) {
       setError(err.message);
-      setProducts([
-        { productId: 'PRD-1001', omschrijving: 'Autoverzekering Plus' },
-        { productId: 'PRD-2003', omschrijving: 'Opstalverzekering Compleet' },
-        { productId: 'PRD-3007', omschrijving: 'Inboedelverzekering Extra' },
-      ]);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -120,7 +116,7 @@ const Products = () => {
           </div>
 
           {error && (
-            <div className="mx-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
+            <div className="mx-6 mt-6 mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm text-yellow-800 font-medium">Actie mislukt</p>
@@ -136,7 +132,7 @@ const Products = () => {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
               </div>
-            ) : (
+            ) : error ? null : (
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -167,7 +163,9 @@ const Products = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
                           {product.productId || '-'}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">{product.omschrijving || '-'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-200">
+                          {product.omschrijving || '-'}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <button
                             onClick={() => navigate(`/producten/${product.productId}/regels`)}

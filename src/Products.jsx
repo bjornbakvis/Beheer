@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import TopNav from './TopNav';
 import { withApiEnv } from './apiEnv';
 import { authFetch } from './apiAuth';
@@ -17,11 +17,13 @@ const Products = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Sorteren zoals App.jsx / Dynamiekregels.jsx
-  const [sortKey, setSortKey] = useState('productId'); // productId | omschrijving
+  // Default sorteren op OMSCHRIJVING
+  const [sortKey, setSortKey] = useState('omschrijving'); // productId | omschrijving
   const [sortDir, setSortDir] = useState('asc'); // asc | desc
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const restoredListRef = useRef(false);
 
   const normalizeProducts = (incoming) => {
     if (!incoming) return [];
@@ -81,6 +83,17 @@ const Products = () => {
     window.addEventListener('apiEnvChange', handleEnvChange);
     return () => window.removeEventListener('apiEnvChange', handleEnvChange);
   }, []);
+
+  // Restore listState (zoals App.jsx)
+  useEffect(() => {
+    const listState = location.state?.listState;
+    if (!restoredListRef.current && listState) {
+      if (typeof listState.searchTerm === 'string') setSearchTerm(listState.searchTerm);
+      if (typeof listState.sortKey === 'string') setSortKey(listState.sortKey);
+      if (typeof listState.sortDir === 'string') setSortDir(listState.sortDir);
+      restoredListRef.current = true;
+    }
+  }, [location.state]);
 
   const toggleSort = (key) => {
     if (sortKey === key) {
@@ -241,7 +254,11 @@ const Products = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           <div className="w-full flex justify-center">
                             <button
-                              onClick={() => navigate(`/producten/${product.productId}/regels`)}
+                              onClick={() =>
+                                navigate(`/producten/${product.productId}/regels`, {
+                                  state: { listState: { searchTerm, sortKey, sortDir } },
+                                })
+                              }
                               disabled={!product.productId}
                               className="px-3 py-2 rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed border brand-outline"
                               title="Toon acceptatieregels"
@@ -254,7 +271,11 @@ const Products = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           <div className="w-full flex justify-center">
                             <button
-                              onClick={() => navigate(`/producten/${product.productId}/dynamiekregels`)}
+                              onClick={() =>
+                                navigate(`/producten/${product.productId}/dynamiekregels`, {
+                                  state: { listState: { searchTerm, sortKey, sortDir } },
+                                })
+                              }
                               disabled={!product.productId}
                               className="px-3 py-2 rounded-xl transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed border brand-outline"
                               title="Toon dynamiekregels"

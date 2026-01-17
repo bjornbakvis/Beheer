@@ -127,15 +127,7 @@ const Dynamiekregels = () => {
 
       const data = await response.json();
       const normalized = normalizeRules(data.rules || data.data || data);
-
-      // Alleen jouw gevraagde gedrag:
-      // - bij geen resultaat óók alleen de banner tonen (en géén tabel)
-      if (normalized.length === 0) {
-        setRules([]);
-        setError('Geen dynamiekregels gevonden');
-      } else {
-        setRules(normalized);
-      }
+      setRules(normalized);
     } catch (err) {
       setError(err.message);
       setRules([]);
@@ -758,9 +750,6 @@ const Dynamiekregels = () => {
     );
   };
 
-  // Alleen de tabel tonen als er daadwerkelijk data is én er geen error is
-  const showTable = !loading && !error && rules.length > 0;
-
   return (
     <div className="min-h-screen brand-page">
       <TopNav />
@@ -821,7 +810,7 @@ const Dynamiekregels = () => {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
               </div>
-            ) : showTable ? (
+            ) : (
               <table className="w-full table-fixed">
                 <colgroup>
                   <col style={{ width: '120px' }} />
@@ -953,7 +942,7 @@ const Dynamiekregels = () => {
                   )}
                 </tbody>
               </table>
-            ) : null}
+            )}
           </div>
 
           {rules.length > 0 && (

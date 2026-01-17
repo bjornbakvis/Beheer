@@ -29,7 +29,7 @@ const RuleDetail = () => {
           }
         );
         if (!res.ok) {
-          throw new Error(`Failed to fetch details (status ${res.status})`);
+          throw new Error(`De acceptatieregel kon niet worden opgehaald`);
         }
         const data = await res.json();
         const rule = Array.isArray(data) ? data[0] : data;
@@ -136,7 +136,7 @@ const RuleDetail = () => {
             <div className="flex items-start gap-3 text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/30 dark:border-yellow-700/60 dark:text-yellow-200">
               <AlertCircle className="w-5 h-5 flex-shrink-0 dark:text-yellow-400" />
               <div>
-                <p className="font-medium text-sm">Kon details niet laden</p>
+                <p className="font-medium text-sm">Actie mislukt</p>
                 <p className="text-xs mt-1">{error}</p>
               </div>
             </div>

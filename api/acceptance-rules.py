@@ -23,22 +23,36 @@ DEFAULT_KINETIC_HOST = os.getenv("KINETIC_HOST", "https://dcb.sleutelstadassurad
 DEFAULT_CLIENT_ID = os.getenv("KINETIC_CLIENT_ID")
 DEFAULT_CLIENT_SECRET = os.getenv("KINETIC_CLIENT_SECRET")
 
-ACCEPTANCE_KINETIC_HOST = os.getenv("KINETIC_HOST_ACCEPTANCE", DEFAULT_KINETIC_HOST)
-ACCEPTANCE_CLIENT_ID = os.getenv("KINETIC_CLIENT_ID_ACCEPTANCE", DEFAULT_CLIENT_ID)
-ACCEPTANCE_CLIENT_SECRET = os.getenv("KINETIC_CLIENT_SECRET_ACCEPTANCE", DEFAULT_CLIENT_SECRET)
+# Acceptance env vars: GEEN fallback naar production (veiligheid)
+ACCEPTANCE_KINETIC_HOST = os.getenv("KINETIC_HOST_ACCEPTANCE")
+ACCEPTANCE_CLIENT_ID = os.getenv("KINETIC_CLIENT_ID_ACCEPTANCE")
+ACCEPTANCE_CLIENT_SECRET = os.getenv("KINETIC_CLIENT_SECRET_ACCEPTANCE")
 
 # DIAS tenant/company headers (maak deze in Vercel aan!)
 DEFAULT_TENANT_CUSTOMER_ID = os.getenv("DIAS_TENANT_CUSTOMER_ID", "")
 DEFAULT_BEDRIJF_ID = os.getenv("DIAS_BEDRIJF_ID", "")
 
-ACCEPTANCE_TENANT_CUSTOMER_ID = os.getenv(
-    "DIAS_TENANT_CUSTOMER_ID_ACCEPTANCE", DEFAULT_TENANT_CUSTOMER_ID
-)
-ACCEPTANCE_BEDRIJF_ID = os.getenv("DIAS_BEDRIJF_ID_ACCEPTANCE", DEFAULT_BEDRIJF_ID)
+# Acceptance env vars: GEEN fallback naar production (veiligheid)
+ACCEPTANCE_TENANT_CUSTOMER_ID = os.getenv("DIAS_TENANT_CUSTOMER_ID_ACCEPTANCE")
+ACCEPTANCE_BEDRIJF_ID = os.getenv("DIAS_BEDRIJF_ID_ACCEPTANCE")
 
 
 def get_env_config(env_key: str):
     if env_key == "acceptance":
+        missing = []
+        if not ACCEPTANCE_KINETIC_HOST:
+            missing.append("KINETIC_HOST_ACCEPTANCE")
+        if not ACCEPTANCE_CLIENT_ID:
+            missing.append("KINETIC_CLIENT_ID_ACCEPTANCE")
+        if not ACCEPTANCE_CLIENT_SECRET:
+            missing.append("KINETIC_CLIENT_SECRET_ACCEPTANCE")
+        if not ACCEPTANCE_TENANT_CUSTOMER_ID:
+            missing.append("DIAS_TENANT_CUSTOMER_ID_ACCEPTANCE")
+        if not ACCEPTANCE_BEDRIJF_ID:
+            missing.append("DIAS_BEDRIJF_ID_ACCEPTANCE")
+        if missing:
+            raise RuntimeError("Acceptance env vars ontbreken: " + ", ".join(missing))
+
         return {
             "host": ACCEPTANCE_KINETIC_HOST,
             "client_id": ACCEPTANCE_CLIENT_ID,

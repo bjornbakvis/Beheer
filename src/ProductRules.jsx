@@ -43,7 +43,7 @@ const ProductRules = () => {
         }
       );
       if (!res.ok) {
-        throw new Error(`Failed to fetch product rules (status ${res.status})`);
+        throw new Error(`De acceptatieregel kon niet worden opgehaald`);
       }
       const data = await res.json();
       const validatieregels = Array.isArray(data.Validatieregels)
@@ -248,7 +248,7 @@ const ProductRules = () => {
               <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5 dark:text-yellow-400" />
               <div>
                 <p className="text-sm text-yellow-800 font-medium dark:text-yellow-200">
-                  Kon acceptatieregels niet laden
+                  Actie mislukt
                 </p>
                 <p className="text-xs text-yellow-700 mt-1 dark:text-yellow-200/80">{error}</p>
               </div>

@@ -275,6 +275,20 @@ const Dynamiekregels = () => {
     RubriekId: toNumberOrZero(e?.RubriekId ?? ''),
   });
 
+
+  // Create input sanitizers (alleen voor toevoegen)
+  const sanitizeDigits = (raw, maxLen) => {
+    const s = (raw ?? '').toString();
+    const only = s.replace(/\D+/g, '');
+    return typeof maxLen === 'number' ? only.slice(0, maxLen) : only;
+  };
+
+  const sanitizeAlnum = (raw, maxLen) => {
+    const s = (raw ?? '').toString();
+    const only = s.replace(/[^a-z0-9]/gi, '');
+    return typeof maxLen === 'number' ? only.slice(0, maxLen) : only;
+  };
+
   const clearCreateFieldError = (path) => {
     if (!path) return;
     setCreateFieldErrors((prev) => {
@@ -372,6 +386,15 @@ const Dynamiekregels = () => {
     });
 return errors;
   };
+
+  // Real-time create validatie: herbereken fouten zodra createForm wijzigt terwijl modal open staat
+  useEffect(() => {
+    if (!showCreateModal) return;
+    const errors = validateCreateForm();
+    setCreateFieldErrors(errors);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createForm, showCreateModal]);
+
 
   const openCreateModal = () => {
     setCreateError(null);
@@ -727,7 +750,12 @@ return errors;
             type="text"
             value={value.EntiteitcodeId}
             onChange={(e) => {
-              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.EntiteitcodeId`);
+              if (createPathPrefix) {
+                clearCreateFieldError(`${createPathPrefix}.EntiteitcodeId`);
+                const v = sanitizeAlnum(e.target.value, 2);
+                onChange({ EntiteitcodeId: v });
+                return;
+              }
               onChange({ EntiteitcodeId: e.target.value });
             }}
             className={[baseInput, errEnt ? 'border-red-400' : ''].join(' ')}
@@ -744,7 +772,12 @@ return errors;
             type="text"
             value={value.AfdDekkingcode}
             onChange={(e) => {
-              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.AfdDekkingcode`);
+              if (createPathPrefix) {
+                clearCreateFieldError(`${createPathPrefix}.AfdDekkingcode`);
+                const v = sanitizeDigits(e.target.value, 4);
+                onChange({ AfdDekkingcode: v });
+                return;
+              }
               onChange({ AfdDekkingcode: e.target.value });
             }}
             className={[baseInput, errDek ? 'border-red-400' : ''].join(' ')}
@@ -761,7 +794,12 @@ return errors;
             type="text"
             value={value.AttribuutcodeId}
             onChange={(e) => {
-              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.AttribuutcodeId`);
+              if (createPathPrefix) {
+                clearCreateFieldError(`${createPathPrefix}.AttribuutcodeId`);
+                const v = sanitizeAlnum(e.target.value, 7);
+                onChange({ AttribuutcodeId: v });
+                return;
+              }
               onChange({ AttribuutcodeId: e.target.value });
             }}
             className={[baseInput, errAtt ? 'border-red-400' : ''].join(' ')}
@@ -778,7 +816,12 @@ return errors;
             type="number"
             value={value.RubriekId}
             onChange={(e) => {
-              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.RubriekId`);
+              if (createPathPrefix) {
+                clearCreateFieldError(`${createPathPrefix}.RubriekId`);
+                const v = sanitizeDigits(e.target.value, 6);
+                onChange({ RubriekId: v });
+                return;
+              }
               onChange({ RubriekId: e.target.value });
             }}
             className={[baseInput, errRub ? 'border-red-400' : ''].join(' ')}
@@ -868,7 +911,10 @@ return errors;
                       if (!isEdit) clearCreateFieldError(`rekenregels.${r._id}.Waarde`);
                       isEdit
                         ? updateEditRekenregel(r._id, { Waarde: e.target.value })
-                        : updateCreateRekenregel(r._id, { Waarde: e.target.value });
+                        : (() => {
+                        const v = sanitizeAlnum(e.target.value, 30);
+                        updateCreateRekenregel(r._id, { Waarde: v });
+                      })();
                     }}
                     className={[baseInput, !isEdit && waardeErr ? 'border-red-400' : ''].join(' ')}
                     placeholder="Bijv. 15"
@@ -1277,11 +1323,15 @@ return errors;
                   </label>
                   <input
                     id="create-afd"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={3}
                     value={createForm.afdBrancheCodeId}
                     onChange={(e) => {
                       clearCreateFieldError('afdBrancheCodeId');
-                      setCreateForm((p) => ({ ...p, afdBrancheCodeId: e.target.value }));
+                      const v = sanitizeDigits(e.target.value, 3);
+                      setCreateForm((p) => ({ ...p, afdBrancheCodeId: v }));
                     }}
                     className={[
                       'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100',

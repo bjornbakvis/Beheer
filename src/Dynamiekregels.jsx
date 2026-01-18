@@ -68,7 +68,7 @@ const Dynamiekregels = () => {
   const [createForm, setCreateForm] = useState(() => ({
     omschrijving: '',
     afdBrancheCodeId: '',
-    gevolg: 'NotSet',
+    gevolg: '',
     bron: emptyEntiteit(),
     rekenregels: [emptyRekenregelCreate()],
   }));
@@ -280,7 +280,7 @@ const Dynamiekregels = () => {
     setCreateForm({
       omschrijving: '',
       afdBrancheCodeId: '',
-      gevolg: 'NotSet',
+      gevolg: '',
       bron: emptyEntiteit(),
       rekenregels: [emptyRekenregelCreate()],
     });
@@ -320,6 +320,16 @@ const Dynamiekregels = () => {
     const afd = toNumberOrZero(createForm.afdBrancheCodeId);
     if (!afd) {
       setCreateError('Afd branchecode moet een geheel getal zijn.');
+      return;
+    }
+
+    const gevolg = (createForm.gevolg ?? '').toString().trim();
+    if (!gevolg) {
+      setCreateError('Gevolg is verplicht.');
+      return;
+    }
+    if (gevolg !== 'TonenVerplicht' && gevolg !== 'TonenOptioneel') {
+      setCreateError('Gevolg moet TonenVerplicht of TonenOptioneel zijn.');
       return;
     }
 
@@ -1132,14 +1142,17 @@ const Dynamiekregels = () => {
                   <label className="text-sm font-medium text-gray-700 dark:text-slate-200" htmlFor="create-gevolg">
                     Gevolg
                   </label>
-                  <input
+                  <select
                     id="create-gevolg"
-                    type="text"
                     value={createForm.gevolg}
                     onChange={(e) => setCreateForm((p) => ({ ...p, gevolg: e.target.value }))}
+                    required
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                    placeholder="Bijv. UitsluitenOptioneel"
-                  />
+                  >
+                    <option value="">— Kies een gevolg —</option>
+                    <option value="TonenVerplicht">TonenVerplicht</option>
+                    <option value="TonenOptioneel">TonenOptioneel</option>
+                  </select>
                 </div>
               </div>
 

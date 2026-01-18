@@ -1353,7 +1353,9 @@ return errors;
                   maxLength={200}
                   value={createForm.omschrijving}
                   onChange={(e) => {
-                    clearCreateFieldError('omschrijving');
+                    const key = 'omschrijving';
+                    markCreateTouched(key);
+                    clearCreateFieldError(key);
                     setCreateForm((p) => ({ ...p, omschrijving: e.target.value }));
                   }}
                   className={[
@@ -1403,7 +1405,9 @@ return errors;
                     id="create-gevolg"
                     value={createForm.gevolg}
                     onChange={(e) => {
-                      clearCreateFieldError('gevolg');
+                      const key = 'gevolg';
+                      markCreateTouched(key);
+                      clearCreateFieldError(key);
                       setCreateForm((p) => ({ ...p, gevolg: e.target.value }));
                     }}
                     required

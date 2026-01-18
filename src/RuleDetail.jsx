@@ -142,24 +142,23 @@ const RuleDetail = () => {
             </div>
           ) : detail ? (
             <dl className="space-y-4">
-              <div>
-                <dt className="text-sm text-gray-500 dark:text-slate-400">
-                  Omschrijving
-                </dt>
-                <dd className="text-lg text-gray-900 dark:text-slate-100">
-                  {detail.Omschrijving || detail.omschrijving || '-'}
-                </dd>
-              </div>
-
-              {/* ✅ Nieuw blok: ExternNummer (zelfde stijl) */}
-              <div>
-                <dt className="text-sm text-gray-500 dark:text-slate-400">
-                  Extern nummer
-                </dt>
-                <dd className="text-lg text-gray-900 dark:text-slate-100">
-                  {externNummer}
-                </dd>
-              </div>
+            <div>
+              <dt className="text-sm text-gray-500 dark:text-slate-400">
+                Extern nummer
+              </dt>
+              <dd className="text-lg text-gray-900 dark:text-slate-100">
+                {externNummer}
+              </dd>
+            </div>
+            
+            <div>
+              <dt className="text-sm text-gray-500 dark:text-slate-400">
+                Omschrijving
+              </dt>
+              <dd className="text-lg text-gray-900 dark:text-slate-100">
+                {detail.Omschrijving || detail.omschrijving || '-'}
+              </dd>
+            </div>  
 
               <div>
                 <dt className="text-sm text-gray-500 dark:text-slate-400">

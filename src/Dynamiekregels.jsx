@@ -353,23 +353,24 @@ const Dynamiekregels = () => {
 
     const rekenregels = Array.isArray(createForm.rekenregels) ? createForm.rekenregels : [];
     rekenregels.forEach((r, idx) => {
+      const rid = (r?._id ?? '').toString().trim() || `idx-${idx}`;
+
       const op = norm(r?.Operator);
-      if (!op || op === 'NotSet') errors[`rekenregels.${idx}.Operator`] = 'Operator is verplicht.';
+      if (!op || op === 'NotSet') errors[`rekenregels.${rid}.Operator`] = 'Operator is verplicht.';
 
       const waarde = norm(r?.Waarde);
       if (waarde) {
         if (waarde.length > 30 || !isAlnum(waarde))
-          errors[`rekenregels.${idx}.Waarde`] = 'Waarde mag maximaal 30 alfanumerieke tekens lang zijn.';
+          errors[`rekenregels.${rid}.Waarde`] = 'Waarde mag maximaal 30 alfanumerieke tekens lang zijn.';
       }
       if (bronIsTypeZonderAttribuutRubriek && waarde) {
-        errors[`rekenregels.${idx}.Waarde`] = 'Waarde mag niet gevuld zijn als de Bron een dekking, object of partij is.';
+        errors[`rekenregels.${rid}.Waarde`] = 'Waarde mag niet gevuld zijn als de Bron een dekking, object of partij is.';
       }
 
       // Doel: entiteitcode verplicht
-      validateEntiteit(r?.Doel, `rekenregels.${idx}.Doel`, true);
+      validateEntiteit(r?.Doel, `rekenregels.${rid}.Doel`, true);
     });
-
-    return errors;
+return errors;
   };
 
   const openCreateModal = () => {
@@ -663,6 +664,22 @@ const Dynamiekregels = () => {
       const remaining = prev.rekenregels.filter((r) => r._id !== id);
       return { ...prev, rekenregels: remaining.length ? remaining : [emptyRekenregelCreate()] };
     });
+
+    // Opschonen van eventuele foutmeldingen voor deze rekenregel (zonder gedrag te veranderen)
+    setCreateFieldErrors((prev) => {
+      if (!prev) return prev;
+      const prefix = `rekenregels.${id}.`;
+      const next = {};
+      let changed = false;
+      for (const [k, v] of Object.entries(prev)) {
+        if (k.startsWith(prefix)) {
+          changed = true;
+          continue;
+        }
+        next[k] = v;
+      }
+      return changed ? next : prev;
+    });
   };
 
   const removeEditRekenregel = (id) => {
@@ -783,8 +800,8 @@ const Dynamiekregels = () => {
           const baseInput =
             'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 disabled:opacity-60 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100';
 
-          const opErr = !isEdit ? createFieldErrors[`rekenregels.${idx}.Operator`] : null;
-          const waardeErr = !isEdit ? createFieldErrors[`rekenregels.${idx}.Waarde`] : null;
+          const opErr = !isEdit ? createFieldErrors[`rekenregels.${r._id}.Operator`] : null;
+          const waardeErr = !isEdit ? createFieldErrors[`rekenregels.${r._id}.Waarde`] : null;
 
           return (
             <div
@@ -830,7 +847,7 @@ const Dynamiekregels = () => {
                     value={r.Operator}
                     disabled={deleted}
                     onChange={(e) => {
-                      if (!isEdit) clearCreateFieldError(`rekenregels.${idx}.Operator`);
+                      if (!isEdit) clearCreateFieldError(`rekenregels.${r._id}.Operator`);
                       isEdit
                         ? updateEditRekenregel(r._id, { Operator: e.target.value })
                         : updateCreateRekenregel(r._id, { Operator: e.target.value });
@@ -848,7 +865,7 @@ const Dynamiekregels = () => {
                     value={r.Waarde}
                     disabled={deleted}
                     onChange={(e) => {
-                      if (!isEdit) clearCreateFieldError(`rekenregels.${idx}.Waarde`);
+                      if (!isEdit) clearCreateFieldError(`rekenregels.${r._id}.Waarde`);
                       isEdit
                         ? updateEditRekenregel(r._id, { Waarde: e.target.value })
                         : updateCreateRekenregel(r._id, { Waarde: e.target.value });
@@ -867,7 +884,7 @@ const Dynamiekregels = () => {
                     r.Doel,
                     (patch) => (isEdit ? updateEditDoel(r._id, patch) : updateCreateDoel(r._id, patch)),
                     `${mode}-doel-${r._id}`,
-                    !isEdit ? `rekenregels.${idx}.Doel` : undefined
+                    !isEdit ? `rekenregels.${r._id}.Doel` : undefined
                   )}
                 </div>
               </div>

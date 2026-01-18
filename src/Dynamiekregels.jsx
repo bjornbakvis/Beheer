@@ -66,6 +66,8 @@ const Dynamiekregels = () => {
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [createFieldErrors, setCreateFieldErrors] = useState({});
+  const [createTouched, setCreateTouched] = useState({});
+  const [createSubmitAttempted, setCreateSubmitAttempted] = useState(false);
   const [createForm, setCreateForm] = useState(() => ({
     omschrijving: '',
     afdBrancheCodeId: '',
@@ -280,6 +282,29 @@ const Dynamiekregels = () => {
     setCreateFieldErrors((prev) => {
       if (!prev || !prev[path]) return prev;
       const next = { ...prev };
+
+  const markCreateTouched = (path) => {
+    if (!path) return;
+    setCreateTouched((prev) => (prev && prev[path] ? prev : { ...(prev || {}), [path]: true }));
+  };
+
+  const shouldShowCreateError = (path) => {
+    if (!path) return false;
+    if (createSubmitAttempted) return true;
+    return !!createTouched?.[path];
+  };
+
+  const sanitizeDigits = (raw, maxLen) => {
+    const s = (raw ?? '').toString();
+    const only = s.replace(/\D+/g, '');
+    return typeof maxLen === 'number' ? only.slice(0, maxLen) : only;
+  };
+
+  const sanitizeAlnum = (raw, maxLen) => {
+    const s = (raw ?? '').toString();
+    const only = s.replace(/[^a-z0-9]/gi, '');
+    return typeof maxLen === 'number' ? only.slice(0, maxLen) : only;
+  };
       delete next[path];
       return next;
     });
@@ -373,10 +398,20 @@ const Dynamiekregels = () => {
 return errors;
   };
 
+  useEffect(() => {
+    if (!showCreateModal) return;
+    const errors = validateCreateForm();
+    setCreateFieldErrors(errors);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createForm, showCreateModal]);
+
+
   const openCreateModal = () => {
     setCreateError(null);
     setCreateSubmitting(false);
     setCreateFieldErrors({});
+    setCreateTouched({});
+    setCreateSubmitAttempted(false);
     setCreateForm({
       omschrijving: '',
       afdBrancheCodeId: '',
@@ -407,6 +442,7 @@ return errors;
   const handleCreateSubmit = async (event) => {
     event.preventDefault();
     setCreateError(null);
+    setCreateSubmitAttempted(true);
 
     const errors = validateCreateForm();
     if (Object.keys(errors).length) {
@@ -680,6 +716,22 @@ return errors;
       }
       return changed ? next : prev;
     });
+
+    setCreateTouched((prev) => {
+      if (!prev) return prev;
+      const prefix = `rekenregels.${id}.`;
+      const next = {};
+      let changed = false;
+      for (const [k, v] of Object.entries(prev)) {
+        if (k.startsWith(prefix)) {
+          changed = true;
+          continue;
+        }
+        next[k] = v;
+      }
+      return changed ? next : prev;
+    });
+
   };
 
   const removeEditRekenregel = (id) => {
@@ -707,7 +759,12 @@ return errors;
   };
 
   const renderEntiteitFields = (value, onChange, prefixId, createPathPrefix) => {
-    const getErr = (suffix) => (createPathPrefix ? createFieldErrors[`${createPathPrefix}.${suffix}`] : null);
+    const isCreate = !!createPathPrefix;
+    const getErr = (suffix) => {
+      if (!createPathPrefix) return null;
+      const key = `${createPathPrefix}.${suffix}`;
+      return shouldShowCreateError(key) ? createFieldErrors[key] : null;
+    };
     const errEnt = getErr('EntiteitcodeId');
     const errDek = getErr('AfdDekkingcode');
     const errAtt = getErr('AttribuutcodeId');
@@ -727,7 +784,14 @@ return errors;
             type="text"
             value={value.EntiteitcodeId}
             onChange={(e) => {
-              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.EntiteitcodeId`);
+              if (createPathPrefix) {
+                const key = `${createPathPrefix}.EntiteitcodeId`;
+                markCreateTouched(key);
+                clearCreateFieldError(key);
+                const v = sanitizeAlnum(e.target.value, 2);
+                onChange({ EntiteitcodeId: v });
+                return;
+              }
               onChange({ EntiteitcodeId: e.target.value });
             }}
             className={[baseInput, errEnt ? 'border-red-400' : ''].join(' ')}
@@ -744,7 +808,14 @@ return errors;
             type="text"
             value={value.AfdDekkingcode}
             onChange={(e) => {
-              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.AfdDekkingcode`);
+              if (createPathPrefix) {
+                const key = `${createPathPrefix}.AfdDekkingcode`;
+                markCreateTouched(key);
+                clearCreateFieldError(key);
+                const v = sanitizeDigits(e.target.value, 4);
+                onChange({ AfdDekkingcode: v });
+                return;
+              }
               onChange({ AfdDekkingcode: e.target.value });
             }}
             className={[baseInput, errDek ? 'border-red-400' : ''].join(' ')}
@@ -761,7 +832,14 @@ return errors;
             type="text"
             value={value.AttribuutcodeId}
             onChange={(e) => {
-              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.AttribuutcodeId`);
+              if (createPathPrefix) {
+                const key = `${createPathPrefix}.AttribuutcodeId`;
+                markCreateTouched(key);
+                clearCreateFieldError(key);
+                const v = sanitizeAlnum(e.target.value, 7);
+                onChange({ AttribuutcodeId: v });
+                return;
+              }
               onChange({ AttribuutcodeId: e.target.value });
             }}
             className={[baseInput, errAtt ? 'border-red-400' : ''].join(' ')}
@@ -778,7 +856,14 @@ return errors;
             type="number"
             value={value.RubriekId}
             onChange={(e) => {
-              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.RubriekId`);
+              if (createPathPrefix) {
+                const key = `${createPathPrefix}.RubriekId`;
+                markCreateTouched(key);
+                clearCreateFieldError(key);
+                const v = sanitizeDigits(e.target.value, 6);
+                onChange({ RubriekId: v });
+                return;
+              }
               onChange({ RubriekId: e.target.value });
             }}
             className={[baseInput, errRub ? 'border-red-400' : ''].join(' ')}
@@ -800,8 +885,8 @@ return errors;
           const baseInput =
             'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 disabled:opacity-60 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100';
 
-          const opErr = !isEdit ? createFieldErrors[`rekenregels.${r._id}.Operator`] : null;
-          const waardeErr = !isEdit ? createFieldErrors[`rekenregels.${r._id}.Waarde`] : null;
+          const opErr = !isEdit ? (shouldShowCreateError(`rekenregels.${r._id}.Operator`) ? createFieldErrors[`rekenregels.${r._id}.Operator`] : null) : null;
+          const waardeErr = !isEdit ? (shouldShowCreateError(`rekenregels.${r._id}.Waarde`) ? createFieldErrors[`rekenregels.${r._id}.Waarde`] : null) : null;
 
           return (
             <div
@@ -847,7 +932,11 @@ return errors;
                     value={r.Operator}
                     disabled={deleted}
                     onChange={(e) => {
-                      if (!isEdit) clearCreateFieldError(`rekenregels.${r._id}.Operator`);
+                      if (!isEdit) {
+                        const key = `rekenregels.${r._id}.Operator`;
+                        markCreateTouched(key);
+                        clearCreateFieldError(key);
+                      }
                       isEdit
                         ? updateEditRekenregel(r._id, { Operator: e.target.value })
                         : updateCreateRekenregel(r._id, { Operator: e.target.value });
@@ -865,10 +954,17 @@ return errors;
                     value={r.Waarde}
                     disabled={deleted}
                     onChange={(e) => {
-                      if (!isEdit) clearCreateFieldError(`rekenregels.${r._id}.Waarde`);
+                      if (!isEdit) {
+                        const key = `rekenregels.${r._id}.Waarde`;
+                        markCreateTouched(key);
+                        clearCreateFieldError(key);
+                      }
                       isEdit
                         ? updateEditRekenregel(r._id, { Waarde: e.target.value })
-                        : updateCreateRekenregel(r._id, { Waarde: e.target.value });
+                        : (() => {
+                          const v = sanitizeAlnum(e.target.value, 30);
+                          updateCreateRekenregel(r._id, { Waarde: v });
+                        })();
                     }}
                     className={[baseInput, !isEdit && waardeErr ? 'border-red-400' : ''].join(' ')}
                     placeholder="Bijv. 15"
@@ -1262,10 +1358,10 @@ return errors;
                   }}
                   className={[
                     'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100',
-                    createFieldErrors['omschrijving'] ? 'border-red-400' : '',
+                    (shouldShowCreateError('omschrijving') && createFieldErrors['omschrijving']) ? 'border-red-400' : '',
                   ].join(' ')}
                 />
-                {createFieldErrors['omschrijving'] ? (
+                {shouldShowCreateError('omschrijving') && createFieldErrors['omschrijving'] ? (
                   <p className="mt-1 text-xs text-red-600">{createFieldErrors['omschrijving']}</p>
                 ) : null}
               </div>
@@ -1277,18 +1373,24 @@ return errors;
                   </label>
                   <input
                     id="create-afd"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={3}
                     value={createForm.afdBrancheCodeId}
                     onChange={(e) => {
-                      clearCreateFieldError('afdBrancheCodeId');
-                      setCreateForm((p) => ({ ...p, afdBrancheCodeId: e.target.value }));
+                      const key = 'afdBrancheCodeId';
+                      markCreateTouched(key);
+                      clearCreateFieldError(key);
+                      const v = sanitizeDigits(e.target.value, 3);
+                      setCreateForm((p) => ({ ...p, afdBrancheCodeId: v }));
                     }}
                     className={[
                       'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100',
-                      createFieldErrors['afdBrancheCodeId'] ? 'border-red-400' : '',
+                      (shouldShowCreateError('afdBrancheCodeId') && createFieldErrors['afdBrancheCodeId']) ? 'border-red-400' : '',
                     ].join(' ')}
                   />
-                  {createFieldErrors['afdBrancheCodeId'] ? (
+                  {shouldShowCreateError('afdBrancheCodeId') && createFieldErrors['afdBrancheCodeId'] ? (
                     <p className="mt-1 text-xs text-red-600">{createFieldErrors['afdBrancheCodeId']}</p>
                   ) : null}
                 </div>
@@ -1307,14 +1409,14 @@ return errors;
                     required
                     className={[
                       'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100',
-                      createFieldErrors['gevolg'] ? 'border-red-400' : '',
+                      (shouldShowCreateError('gevolg') && createFieldErrors['gevolg']) ? 'border-red-400' : '',
                     ].join(' ')}
                   >
                     <option value="">— Kies een gevolg —</option>
                     <option value="TonenVerplicht">TonenVerplicht</option>
                     <option value="TonenOptioneel">TonenOptioneel</option>
                   </select>
-                  {createFieldErrors['gevolg'] ? (
+                  {shouldShowCreateError('gevolg') && createFieldErrors['gevolg'] ? (
                     <p className="mt-1 text-xs text-red-600">{createFieldErrors['gevolg']}</p>
                   ) : null}
                 </div>

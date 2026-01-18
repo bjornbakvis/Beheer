@@ -42,7 +42,7 @@ const TopNav = () => {
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-3 text-gray-900 font-semibold text-lg tracking-tight"
-          aria-label="Ga naar Acceptatieregels"
+          aria-label="Ga naar Overzicht"
         >
           <img src="/logo.png" alt="Sleutelstad" className="h-8 w-auto" />
         </button>
@@ -66,6 +66,9 @@ const TopNav = () => {
 
           {/* Tabs */}
           <NavLink to="/" className={tabClasses} end>
+            Overzicht
+          </NavLink>
+          <NavLink to="/acceptatieregels" className={tabClasses}>
             Acceptatieregels
           </NavLink>
           <NavLink to="/dynamiekregels" className={tabClasses}>

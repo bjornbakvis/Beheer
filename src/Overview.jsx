@@ -22,23 +22,23 @@ const Overview = () => {
       <div className="max-w-6xl mx-auto p-6">
         <h1 className="text-2xl font-semibold text-gray-900">Overzicht</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Kies waar je naartoe wilt.
+          Beheer van acceptatieregels, dynamiekregels en productdefinities
         </p>
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card
             title="Acceptatieregels"
-            description="Overzicht van acceptatieregels, zoeken/sorteren, aanmaken, wijzigen en verwijderen."
+            description="Overzicht van acceptatieregels, zoeken/sorteren, aanmaken, wijzigen en verwijderen"
             to="/acceptatieregels"
           />
           <Card
             title="Dynamiekregels"
-            description="Overzicht van dynamiekregels en details per regel."
+            description="Overzicht van dynamiekregels, zoeken/sorteren, aanmaken, wijzigen en verwijderen"
             to="/dynamiekregels"
           />
           <Card
             title="Producten"
-            description="Productenlijst met regels en dynamiekregels per product."
+            description="Overzicht van actieve producten met bijbehorende acceptatie- en dynamiekregels"
             to="/producten"
           />
         </div>

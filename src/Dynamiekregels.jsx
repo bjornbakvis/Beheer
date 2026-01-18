@@ -65,6 +65,7 @@ const Dynamiekregels = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createError, setCreateError] = useState(null);
+  const [createFieldErrors, setCreateFieldErrors] = useState({});
   const [createForm, setCreateForm] = useState(() => ({
     omschrijving: '',
     afdBrancheCodeId: '',
@@ -274,9 +275,107 @@ const Dynamiekregels = () => {
     RubriekId: toNumberOrZero(e?.RubriekId ?? ''),
   });
 
+  const clearCreateFieldError = (path) => {
+    if (!path) return;
+    setCreateFieldErrors((prev) => {
+      if (!prev || !prev[path]) return prev;
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
+  };
+
+  const validateCreateForm = () => {
+    const errors = {};
+
+    const isDigits = (v) => /^\d+$/.test(v);
+    const isAlnum = (v) => /^[a-z0-9]+$/i.test(v);
+
+    const norm = (v) => (v ?? '').toString().trim();
+
+    const afd = norm(createForm.afdBrancheCodeId);
+    if (afd) {
+      if (!isDigits(afd) || afd.length > 3) errors['afdBrancheCodeId'] = 'Afd branchecode mag maximaal 3 cijfers lang zijn.';
+    }
+
+    const omschrijving = norm(createForm.omschrijving);
+    if (!omschrijving) errors['omschrijving'] = 'Omschrijving is verplicht.';
+    else if (omschrijving.length > 200) errors['omschrijving'] = 'Omschrijving mag maximaal 200 tekens bevatten.';
+
+    const gevolg = norm(createForm.gevolg);
+    if (!gevolg) errors['gevolg'] = 'Gevolg is verplicht.';
+    else if (gevolg !== 'TonenVerplicht' && gevolg !== 'TonenOptioneel')
+      errors['gevolg'] = 'Gevolg moet TonenVerplicht of TonenOptioneel zijn.';
+
+    const validateEntiteit = (entity, basePath, requireEntiteitcode) => {
+      const ent = norm(entity?.EntiteitcodeId);
+      const dek = norm(entity?.AfdDekkingcode);
+      const att = norm(entity?.AttribuutcodeId);
+      const rub = norm(entity?.RubriekId);
+
+      if (requireEntiteitcode) {
+        if (!ent) errors[`${basePath}.EntiteitcodeId`] = 'Entiteitcode is verplicht.';
+        else if (ent.length !== 2 || !isAlnum(ent))
+          errors[`${basePath}.EntiteitcodeId`] = 'Entiteitcode moet precies 2 alfanumerieke tekens lang zijn.';
+      } else if (ent) {
+        if (ent.length !== 2 || !isAlnum(ent))
+          errors[`${basePath}.EntiteitcodeId`] = 'Entiteitcode moet precies 2 alfanumerieke tekens lang zijn.';
+      }
+
+      if (dek) {
+        if (!isDigits(dek) || dek.length !== 4) errors[`${basePath}.AfdDekkingcode`] = 'AFD-dekkingcode moet precies 4 cijfers lang zijn.';
+      }
+
+      if (att) {
+        if (att.length > 7 || !isAlnum(att))
+          errors[`${basePath}.AttribuutcodeId`] = 'Attribuutcode mag maximaal 7 alfanumerieke tekens lang zijn.';
+      }
+
+      if (rub) {
+        if (!isDigits(rub) || rub.length > 6) errors[`${basePath}.RubriekId`] = 'RubriekId mag maximaal 6 cijfers lang zijn.';
+      }
+
+      if (att && rub) {
+        errors[`${basePath}.AttribuutcodeId`] = 'Attribuutcode en RubriekId mogen niet beide zijn gevuld.';
+        errors[`${basePath}.RubriekId`] = 'Attribuutcode en RubriekId mogen niet beide zijn gevuld.';
+      }
+    };
+
+    // Bron: entiteitcode verplicht
+    validateEntiteit(createForm.bron, 'bron', true);
+
+    // Bron-type check voor "waarde niet gevuld"
+    const bronEnt = norm(createForm?.bron?.EntiteitcodeId).toLowerCase();
+    const bronHeeftAttribuut = !!norm(createForm?.bron?.AttribuutcodeId);
+    const bronHeeftRubriek = !!norm(createForm?.bron?.RubriekId);
+    const bronIsDekkingObjectPartij = bronEnt === 'dekking' || bronEnt === 'object' || bronEnt === 'partij';
+    const bronIsTypeZonderAttribuutRubriek = bronIsDekkingObjectPartij && !bronHeeftAttribuut && !bronHeeftRubriek;
+
+    const rekenregels = Array.isArray(createForm.rekenregels) ? createForm.rekenregels : [];
+    rekenregels.forEach((r, idx) => {
+      const op = norm(r?.Operator);
+      if (!op || op === 'NotSet') errors[`rekenregels.${idx}.Operator`] = 'Operator is verplicht.';
+
+      const waarde = norm(r?.Waarde);
+      if (waarde) {
+        if (waarde.length > 30 || !isAlnum(waarde))
+          errors[`rekenregels.${idx}.Waarde`] = 'Waarde mag maximaal 30 alfanumerieke tekens lang zijn.';
+      }
+      if (bronIsTypeZonderAttribuutRubriek && waarde) {
+        errors[`rekenregels.${idx}.Waarde`] = 'Waarde mag niet gevuld zijn als de Bron een dekking, object of partij is.';
+      }
+
+      // Doel: entiteitcode verplicht
+      validateEntiteit(r?.Doel, `rekenregels.${idx}.Doel`, true);
+    });
+
+    return errors;
+  };
+
   const openCreateModal = () => {
     setCreateError(null);
     setCreateSubmitting(false);
+    setCreateFieldErrors({});
     setCreateForm({
       omschrijving: '',
       afdBrancheCodeId: '',
@@ -308,28 +407,10 @@ const Dynamiekregels = () => {
     event.preventDefault();
     setCreateError(null);
 
-    const omschrijving = createForm.omschrijving.trim();
-    if (!omschrijving) {
-      setCreateError('Omschrijving is verplicht.');
-      return;
-    }
-    if (omschrijving.length > 200) {
-      setCreateError('Omschrijving mag maximaal 200 tekens bevatten.');
-      return;
-    }
-    const afd = toNumberOrZero(createForm.afdBrancheCodeId);
-    if (!afd) {
-      setCreateError('Afd branchecode moet een geheel getal zijn.');
-      return;
-    }
-
-    const gevolg = (createForm.gevolg ?? '').toString().trim();
-    if (!gevolg) {
-      setCreateError('Gevolg is verplicht.');
-      return;
-    }
-    if (gevolg !== 'TonenVerplicht' && gevolg !== 'TonenOptioneel') {
-      setCreateError('Gevolg moet TonenVerplicht of TonenOptioneel zijn.');
+    const errors = validateCreateForm();
+    if (Object.keys(errors).length) {
+      setCreateFieldErrors(errors);
+      setCreateError('Controleer de velden met foutmeldingen.');
       return;
     }
 
@@ -608,61 +689,88 @@ const Dynamiekregels = () => {
     }));
   };
 
-  const renderEntiteitFields = (value, onChange, prefixId) => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-      <div>
-        <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-entiteit`}>
-          Entiteitcode
-        </label>
-        <input
-          id={`${prefixId}-entiteit`}
-          type="text"
-          value={value.EntiteitcodeId}
-          onChange={(e) => onChange({ EntiteitcodeId: e.target.value })}
-          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-        />
-      </div>
+  const renderEntiteitFields = (value, onChange, prefixId, createPathPrefix) => {
+    const getErr = (suffix) => (createPathPrefix ? createFieldErrors[`${createPathPrefix}.${suffix}`] : null);
+    const errEnt = getErr('EntiteitcodeId');
+    const errDek = getErr('AfdDekkingcode');
+    const errAtt = getErr('AttribuutcodeId');
+    const errRub = getErr('RubriekId');
 
-      <div>
-        <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-dekking`}>
-          AFD-dekkingcode
-        </label>
-        <input
-          id={`${prefixId}-dekking`}
-          type="text"
-          value={value.AfdDekkingcode}
-          onChange={(e) => onChange({ AfdDekkingcode: e.target.value })}
-          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-        />
-      </div>
+    const baseInput =
+      'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100';
 
-      <div>
-        <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-attribuut`}>
-          Attribuutcode
-        </label>
-        <input
-          id={`${prefixId}-attribuut`}
-          type="text"
-          value={value.AttribuutcodeId}
-          onChange={(e) => onChange({ AttribuutcodeId: e.target.value })}
-          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-        />
-      </div>
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+          <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-entiteit`}>
+            Entiteitcode
+          </label>
+          <input
+            id={`${prefixId}-entiteit`}
+            type="text"
+            value={value.EntiteitcodeId}
+            onChange={(e) => {
+              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.EntiteitcodeId`);
+              onChange({ EntiteitcodeId: e.target.value });
+            }}
+            className={[baseInput, errEnt ? 'border-red-400' : ''].join(' ')}
+          />
+          {errEnt ? <p className="mt-1 text-xs text-red-600">{errEnt}</p> : null}
+        </div>
 
-      <div>
-        <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-rubriek`}>
-          RubriekId
-        </label>
-        <input
-          id={`${prefixId}-rubriek`}
-          type="number"
-          value={value.RubriekId}
-          onChange={(e) => onChange({ RubriekId: e.target.value })}
-          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-        />
+        <div>
+          <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-dekking`}>
+            AFD-dekkingcode
+          </label>
+          <input
+            id={`${prefixId}-dekking`}
+            type="text"
+            value={value.AfdDekkingcode}
+            onChange={(e) => {
+              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.AfdDekkingcode`);
+              onChange({ AfdDekkingcode: e.target.value });
+            }}
+            className={[baseInput, errDek ? 'border-red-400' : ''].join(' ')}
+          />
+          {errDek ? <p className="mt-1 text-xs text-red-600">{errDek}</p> : null}
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-attribuut`}>
+            Attribuutcode
+          </label>
+          <input
+            id={`${prefixId}-attribuut`}
+            type="text"
+            value={value.AttribuutcodeId}
+            onChange={(e) => {
+              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.AttribuutcodeId`);
+              onChange({ AttribuutcodeId: e.target.value });
+            }}
+            className={[baseInput, errAtt ? 'border-red-400' : ''].join(' ')}
+          />
+          {errAtt ? <p className="mt-1 text-xs text-red-600">{errAtt}</p> : null}
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-gray-600 dark:text-slate-300" htmlFor={`${prefixId}-rubriek`}>
+            RubriekId
+          </label>
+          <input
+            id={`${prefixId}-rubriek`}
+            type="number"
+            value={value.RubriekId}
+            onChange={(e) => {
+              if (createPathPrefix) clearCreateFieldError(`${createPathPrefix}.RubriekId`);
+              onChange({ RubriekId: e.target.value });
+            }}
+            className={[baseInput, errRub ? 'border-red-400' : ''].join(' ')}
+          />
+          {errRub ? <p className="mt-1 text-xs text-red-600">{errRub}</p> : null}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderRekenregels = (items, mode) => {
     const isEdit = mode === 'edit';
@@ -671,6 +779,13 @@ const Dynamiekregels = () => {
       <div className="space-y-3">
         {items.map((r, idx) => {
           const deleted = !!r._deleted;
+
+          const baseInput =
+            'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 disabled:opacity-60 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100';
+
+          const opErr = !isEdit ? createFieldErrors[`rekenregels.${idx}.Operator`] : null;
+          const waardeErr = !isEdit ? createFieldErrors[`rekenregels.${idx}.Waarde`] : null;
+
           return (
             <div
               key={r._id}
@@ -714,14 +829,16 @@ const Dynamiekregels = () => {
                     type="text"
                     value={r.Operator}
                     disabled={deleted}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      if (!isEdit) clearCreateFieldError(`rekenregels.${idx}.Operator`);
                       isEdit
                         ? updateEditRekenregel(r._id, { Operator: e.target.value })
-                        : updateCreateRekenregel(r._id, { Operator: e.target.value })
-                    }
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 disabled:opacity-60 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                        : updateCreateRekenregel(r._id, { Operator: e.target.value });
+                    }}
+                    className={[baseInput, !isEdit && opErr ? 'border-red-400' : ''].join(' ')}
                     placeholder="Bijv. GelijkAan"
                   />
+                  {!isEdit && opErr ? <p className="mt-1 text-xs text-red-600">{opErr}</p> : null}
                 </div>
 
                 <div>
@@ -730,14 +847,16 @@ const Dynamiekregels = () => {
                     type="text"
                     value={r.Waarde}
                     disabled={deleted}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      if (!isEdit) clearCreateFieldError(`rekenregels.${idx}.Waarde`);
                       isEdit
                         ? updateEditRekenregel(r._id, { Waarde: e.target.value })
-                        : updateCreateRekenregel(r._id, { Waarde: e.target.value })
-                    }
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 disabled:opacity-60 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                        : updateCreateRekenregel(r._id, { Waarde: e.target.value });
+                    }}
+                    className={[baseInput, !isEdit && waardeErr ? 'border-red-400' : ''].join(' ')}
                     placeholder="Bijv. 15"
                   />
+                  {!isEdit && waardeErr ? <p className="mt-1 text-xs text-red-600">{waardeErr}</p> : null}
                 </div>
               </div>
 
@@ -747,7 +866,8 @@ const Dynamiekregels = () => {
                   {renderEntiteitFields(
                     r.Doel,
                     (patch) => (isEdit ? updateEditDoel(r._id, patch) : updateCreateDoel(r._id, patch)),
-                    `${mode}-doel-${r._id}`
+                    `${mode}-doel-${r._id}`,
+                    !isEdit ? `rekenregels.${idx}.Doel` : undefined
                   )}
                 </div>
               </div>
@@ -1119,9 +1239,18 @@ const Dynamiekregels = () => {
                   type="text"
                   maxLength={200}
                   value={createForm.omschrijving}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, omschrijving: e.target.value }))}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                  onChange={(e) => {
+                    clearCreateFieldError('omschrijving');
+                    setCreateForm((p) => ({ ...p, omschrijving: e.target.value }));
+                  }}
+                  className={[
+                    'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100',
+                    createFieldErrors['omschrijving'] ? 'border-red-400' : '',
+                  ].join(' ')}
                 />
+                {createFieldErrors['omschrijving'] ? (
+                  <p className="mt-1 text-xs text-red-600">{createFieldErrors['omschrijving']}</p>
+                ) : null}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1133,9 +1262,18 @@ const Dynamiekregels = () => {
                     id="create-afd"
                     type="number"
                     value={createForm.afdBrancheCodeId}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, afdBrancheCodeId: e.target.value }))}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                    onChange={(e) => {
+                      clearCreateFieldError('afdBrancheCodeId');
+                      setCreateForm((p) => ({ ...p, afdBrancheCodeId: e.target.value }));
+                    }}
+                    className={[
+                      'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100',
+                      createFieldErrors['afdBrancheCodeId'] ? 'border-red-400' : '',
+                    ].join(' ')}
                   />
+                  {createFieldErrors['afdBrancheCodeId'] ? (
+                    <p className="mt-1 text-xs text-red-600">{createFieldErrors['afdBrancheCodeId']}</p>
+                  ) : null}
                 </div>
 
                 <div>
@@ -1145,14 +1283,23 @@ const Dynamiekregels = () => {
                   <select
                     id="create-gevolg"
                     value={createForm.gevolg}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, gevolg: e.target.value }))}
+                    onChange={(e) => {
+                      clearCreateFieldError('gevolg');
+                      setCreateForm((p) => ({ ...p, gevolg: e.target.value }));
+                    }}
                     required
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                    className={[
+                      'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100',
+                      createFieldErrors['gevolg'] ? 'border-red-400' : '',
+                    ].join(' ')}
                   >
                     <option value="">— Kies een gevolg —</option>
                     <option value="TonenVerplicht">TonenVerplicht</option>
                     <option value="TonenOptioneel">TonenOptioneel</option>
                   </select>
+                  {createFieldErrors['gevolg'] ? (
+                    <p className="mt-1 text-xs text-red-600">{createFieldErrors['gevolg']}</p>
+                  ) : null}
                 </div>
               </div>
 
@@ -1163,7 +1310,8 @@ const Dynamiekregels = () => {
                   {renderEntiteitFields(
                     createForm.bron,
                     (patch) => setCreateForm((p) => ({ ...p, bron: { ...p.bron, ...patch } })),
-                    'create-bron'
+                    'create-bron',
+                    'bron'
                   )}
                 </div>
               </div>

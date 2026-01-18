@@ -111,7 +111,7 @@ const RuleDetail = () => {
             onClick={() => {
               const listState = location.state?.listState;
               if (listState) {
-                navigate('/', { state: { listState } });
+                navigate('/acceptatieregels', { state: { listState } });
               } else {
                 navigate(-1);
               }
